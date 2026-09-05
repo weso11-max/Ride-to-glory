@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ride to Glory</title>
+<style>
+:root{
+  --bg:#0b0e12; --panel:#141922; --panel2:#1b2230; --text:#f6f7fb; --muted:#9ca8ba;
+  --accent:#ff3b30; --gold:#f6c453; --good:#52d273; --bad:#ff6b6b; --line:#2a3342;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:
+radial-gradient(circle at top right,#2b1114 0,#0b0e12 35%),var(--bg);color:var(--text)}
+.app{max-width:1180px;margin:0 auto;padding:22px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#ff3b30,#ff8a00);display:grid;place-items:center;font-size:25px;box-shadow:0 10px 30px #0008}
+h1{font-size:28px;margin:0}.sub{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
+.card{background:linear-gradient(180deg,var(--panel),#11161d);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 10px 30px #0005}
+h2{font-size:17px;margin:0 0 14px}.row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+input,select,button{font:inherit}
+input,select{width:100%;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:#0f141b;color:var(--text)}
+button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:pointer}
+.primary{background:linear-gradient(135deg,#ff3b30,#ff7a1a);color:white}
+.secondary{background:#222a37;color:white;border:1px solid #344054}
+.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{background:var(--panel2);border-radius:14px;padding:12px}
+.stat b{display:block;font-size:22px}.stat span{font-size:11px;color:var(--muted)}
+.bigovr{font-size:64px;font-weight:900;line-height:1}.ovrlabel{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+.chip{display:inline-block;padding:5px 9px;border-radius:999px;background:#242d3a;color:#d8e0eb;font-size:12px;margin:3px 4px 3px 0}
+.good{color:var(--good)}.bad{color:var(--bad)}.gold{color:var(--gold)}
+.tablewrap{overflow:auto}.history{width:100%;border-collapse:collapse;font-size:13px}.history th,.history td{padding:9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.history th{color:var(--muted);font-size:11px;text-transform:uppercase}
+.offer{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:14px;margin:10px 0;background:#111720}
+.offer strong{display:block}.offer small{color:var(--muted)}
+.event{padding:12px;border-radius:12px;background:#201c13;border:1px solid #4b3b1b;color:#f4dfae;margin:10px 0}
+.hidden{display:none!important}.sectiongap{margin-top:16px}.footer{color:var(--muted);font-size:11px;text-align:center;padding:18px 0}
+.pills{display:flex;gap:8px;flex-wrap:wrap}.pillbtn{background:#202735;color:#ccd5e2;border:1px solid #313b4a}.pillbtn.active{background:#4b1d1c;border-color:#8d3029;color:white}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.statgrid{grid-template-columns:repeat(2,1fr)}.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><div class="logo">🏍️</div><div><h1>Ride to Glory</h1><div class="sub">A motorcycle racing career simulator</div></div></div>
+  <button class="ghost" onclick="resetGame()">New Career</button>
+</header>
+
+<section id="creator" class="grid">
+  <div class="card">
+    <h2>Create your rider</h2>
+    <div class="row">
+      <div><label>Rider name</label><input id="name" value="" placeholder="Enter your name"></div>
+      <div><label>Nationality</label>
+        <select id="nation">
+          <option>United Kingdom</option><option>Spain</option><option>Italy</option><option>France</option>
+          <option>Australia</option><option>Japan</option><option>United States</option><option>Ireland</option>
+          <option>Netherlands</option><option>Germany</option><option>South Africa</option><option>Other</option>
+        </select>
+      </div>
+      <div><label>Race number</label><input id="number" type="number" min="1" max="99" value="27"></div>
+      <div><label>Riding style</label>
+        <select id="style">
+          <option value="balanced">Balanced</option>
+          <option value="aggressive">Aggressive</option>
+          <option value="smooth">Smooth & Consistent</option>
+          <option value="qualifier">Qualifying Specialist</option>
+          <option value="wet">Wet-Weather Wizard</option>
+        </select>
+      </div>
+    </div>
+    <div class="sectiongap">
+      <label>Red Bull Rookies starting grid</label>
+      <div class="pills" id="gridChoices">
+        <button class="pillbtn active" data-grid="high">High grid</button>
+        <button class="pillbtn" data-grid="middle">Middle grid</button>
+        <button class="pillbtn" data-grid="low">Low grid</button>
+      </div>
+      <div id="gridHelp" style="color:var(--muted);font-size:12px;line-height:1.5;margin-top:9px">High grid: fastest bike, but your development depends heavily on results.</div>
+    </div>
+    <div class="sectiongap"><button class="primary" style="width:100%" onclick="startCareer()">Start Career</button></div>
+  </div>
+  <div class="card">
+    <h2>How it works</h2>
+    <p style="color:var(--muted);line-height:1.6">Every rider begins in Red Bull Rookies. Pick a high-, middle- or low-grid ride, simulate one season at a time, then choose from the offers your results and development have actually earned.</p>
+    <div class="chip">Moto3</div><div class="chip">Moto2</div><div class="chip">MotoGP</div><div class="chip">WorldSSP</div><div class="chip">WorldSBK</div><div class="chip">BSB</div>
+    <p style="color:var(--muted);line-height:1.6">High-grid rookies are rewarded for winning but punished for underperforming. Middle grid is balanced. Low-grid rookies develop strongly regardless of results. From there, the career ladder branches into Grand Prix, WorldSBK and BSB.</p>
+  </div>
+</section>
+
+<section id="game" class="hidden">
+  <div class="grid">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:15px">
+        <div>
+          <div class="sub" id="riderNation"></div>
+          <h2 style="font-size:27px;margin:4px 0" id="riderName"></h2>
+          <div id="currentRide" class="chip"></div>
+          <div id="ageChip" class="chip"></div>
+        </div>
+        <div style="text-align:right"><div class="bigovr" id="ovr">58</div><div class="ovrlabel">OVR</div></div>
+      </div>
+      <div class="statgrid sectiongap">
+        <div class="stat"><b id="starts">0</b><span>Starts</span></div>
+        <div class="stat"><b id="wins">0</b><span>Wins</span></div>
+        <div class="stat"><b id="pods">0</b><span>Podiums</span></div>
+        <div class="stat"><b id="titles">0</b><span>Titles</span></div>
+      </div>
+      <div class="sectiongap">
+        <h2>Rider attributes</h2>
+        <div id="attrs"></div>
+      </div>
+      <div id="eventBox"></div>
+      <div id="simControls" class="sectiongap">
+        <button class="primary" style="width:100%;font-size:17px" onclick="simulateSeason()">Simulate season</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Current season</h2>
+      <div id="seasonPreview" style="color:var(--muted);line-height:1.7"></div>
+      <div id="offers" class="sectiongap"></div>
+    </div>
+  </div>
+
+  <div class="card sectiongap">
+    <h2>Career history</h2>
+    <div class="tablewrap"><table class="history">
+      <thead><tr><th>Age</th><th>Series</th><th>Team</th><th>OVR</th><th>Starts</th><th>Wins</th><th>Podiums</th><th>Poles</th><th>Pts</th><th>Pos</th></tr></thead>
+      <tbody id="historyBody"></tbody>
+    </table></div>
+  </div>
+
+  <div id="retirement" class="card sectiongap hidden"></div>
+</section>
+
+<div class="footer">Ride to Glory — prototype v0.5</div>
+</div>
+
+<script>
+const series = {
+ "Red Bull Rookies": {tier:1, races:14, teams:[{name:"High Grid",bike:78},{name:"Middle Grid",bike:68},{name:"Low Grid",bike:58}]},
+ "Moto3": {tier:2, races:20, teams:[{name:"RedFox GP",bike:84},{name:"Leopardia",bike:88},{name:"Asparia",bike:86},{name:"CIP Racing",bike:75},{name:"Tech3 Junior",bike:81}]},
+ "WorldSSP": {tier:3, races:24, teams:[{name:"Ten Kate Yamaha",bike:89},{name:"Evan Bros Ducati",bike:91},{name:"MV Corse",bike:79},{name:"Kawasaki Puccetti",bike:83}]},
+ "Moto2": {tier:3, races:20, teams:[{name:"Marc VDS",bike:90},{name:"Speed Up",bike:84},{name:"Ajo Racing",bike:92},{name:"Intact GP",bike:87},{name:"American Racing",bike:80}]},
+ "BSB": {tier:4, races:27, teams:[{name:"PBM Ducati",bike:93},{name:"OMG Yamaha",bike:88},{name:"Honda Racing UK",bike:86},{name:"FS-3 Kawasaki",bike:82},{name:"BMW Motorrad UK",bike:89}]},
+ "WorldSBK": {tier:5, races:36, teams:[{name:"Ducati Factory",bike:96},{name:"Yamaha Factory",bike:90},{name:"BMW Motorrad",bike:94},{name:"Kawasaki Racing",bike:88},{name:"Honda HRC",bike:84}]},
+ "MotoGP": {tier:6, races:22, teams:[{name:"Ducati Lenovo",bike:97},{name:"Yamaha Factory",bike:88},{name:"Honda HRC",bike:85},{name:"KTM Factory",bike:91},{name:"Aprilia Racing",bike:93},{name:"Gresini",bike:92},{name:"Pramac",bike:90}]}
+};
+let state=null, selectedGrid="high";
+const gridConfig={
+ high:{team:"High Grid",label:"High grid",help:"Fastest rookie bike. Big results earn bonus development; underperforming slows your growth."},
+ middle:{team:"Middle Grid",label:"Middle grid",help:"Balanced rookie bike and balanced development. Results matter, but there is less risk than the high grid."},
+ low:{team:"Low Grid",label:"Low grid",help:"Slowest rookie bike, but you gain strong development even when results are modest."}
+};
+document.querySelectorAll("#gridChoices .pillbtn").forEach(b=>b.addEventListener("click",()=>{
+ document.querySelectorAll("#gridChoices .pillbtn").forEach(x=>x.classList.remove("active"));
+ b.classList.add("active"); selectedGrid=b.dataset.grid;
+ document.getElementById("gridHelp").textContent=gridConfig[selectedGrid].help;
+}));
+const r=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function styleMods(s){
+ const m={pace:0,racecraft:0,qualifying:0,wet:0,consistency:0,tyres:0,fitness:0,aggression:0};
+ if(s==="aggressive"){m.pace=3;m.aggression=8;m.consistency=-4}
+ if(s==="smooth"){m.consistency=7;m.tyres=5;m.aggression=-3}
+ if(s==="qualifier"){m.qualifying=9;m.racecraft=-2}
+ if(s==="wet"){m.wet=12;m.pace=-1}
+ return m;
+}
+function startCareer(){
+ const name=document.getElementById("name").value.trim()||"Unnamed Rider";
+ const style=document.getElementById("style").value, mods=styleMods(style);
+ let attrs={pace:r(52,60),racecraft:r(50,59),qualifying:r(49,59),wet:r(45,60),consistency:r(49,60),tyres:r(48,59),fitness:r(53,62),aggression:r(48,60)};
+ Object.keys(attrs).forEach(k=>attrs[k]=clamp(attrs[k]+mods[k],35,99));
+ state={name,nation:document.getElementById("nation").value,number:+document.getElementById("number").value||27,style,age:14,series:"Red Bull Rookies",
+ team:gridConfig[selectedGrid].team,rookieGrid:selectedGrid,rookieDevelopment:0,lastDevelopmentGain:0,attrs,ovr:0,baseOvr:0,injuryPenalty:0,teamRatings:initTeamRatings(),history:[],totals:{starts:0,wins:0,podiums:0,poles:0,titles:0},offerPending:false,retired:false};
+ updateOVR(); document.getElementById("creator").classList.add("hidden");document.getElementById("game").classList.remove("hidden");render();
+}
+function initTeamRatings(){
+ const out={};
+ Object.entries(series).forEach(([ser,data])=>{out[ser]={};data.teams.forEach(t=>out[ser][t.name]=t.bike)});
+ return out;
+}
+function teamNames(s){return series[s].teams.map(t=>t.name)}
+function randomTeam(s){const t=teamNames(s);return t[r(0,t.length-1)]}
+function bikeRating(ser=state.series,team=state.team){return state.teamRatings?.[ser]?.[team] ?? series[ser].teams.find(t=>t.name===team)?.bike ?? 70}
+function teamExpectation(ser,team){
+ const teams=teamNames(ser).map(n=>({name:n,bike:bikeRating(ser,n)})).sort((a,b)=>b.bike-a.bike);
+ const rank=teams.findIndex(t=>t.name===team)+1;
+ const n=teams.length;
+ if(rank===1) return {target:3,label:"Title contender"};
+ if(rank<=Math.ceil(n*.4)) return {target:5,label:"Podium contender"};
+ if(rank<=Math.ceil(n*.7)) return {target:8,label:"Top-eight target"};
+ return {target:12,label:"Points / development"};
+}
+function fluctuateBikes(){
+ Object.entries(state.teamRatings).forEach(([ser,teams])=>{
+   Object.keys(teams).forEach(team=>{
+     const tier=series[ser].tier;
+     const swing=tier<=2?r(-3,3):r(-2,2);
+     teams[team]=clamp(teams[team]+swing,48,99);
+   });
+ });
+}
+function updateOVR(){
+ let a=state.attrs;
+ state.baseOvr=Math.round((a.pace*1.5+a.racecraft*1.4+a.qualifying+a.wet*.6+a.consistency+a.tyres*.7+a.fitness*.6+a.aggression*.2)/7);
+ state.ovr=clamp(state.baseOvr-(state.injuryPenalty||0),35,99);
+}
+function seasonStrength(){
+ let s=series[state.series];
+ // Rider ability is the main driver, but the actual team's bike rating now matters every season.
+ const riderWeight=s.tier<=2?.84:s.tier===3?.78:s.tier===4?.74:.70;
+ return state.ovr*riderWeight + bikeRating()*(1-riderWeight) + r(-3,3);
+}
+function simulateSeason(){
+ if(state.offerPending||state.retired)return;
+ const s=series[state.series], strength=seasonStrength(), fieldBase=55+s.tier*5.2;
+ let perf=strength-fieldBase;
+ let injury=false, event="";
+ let crashRisk=(100-state.attrs.consistency)*0.07 + Math.max(0,state.attrs.aggression-70)*0.045;
+ if(Math.random()<0.085+crashRisk/100){
+   injury=true;
+   const severity=r(1,3);
+   const missed=severity===1?r(1,2):severity===2?r(2,4):r(4,6);
+   state.injuryPenalty=Math.max(state.injuryPenalty||0,severity===1?r(1,2):severity===2?r(3,5):r(5,8));
+   updateOVR();
+   event=severity===1?"Minor injury — you miss a round and carry a small fitness penalty into next season.":severity===2?"Broken collarbone — several rounds missed and your OVR is temporarily reduced.":"Major crash — a long lay-off leaves a significant temporary OVR penalty.";
+   var forcedMissed=missed;
+ }
+ let starts=Math.max(1,s.races-(injury?forcedMissed:0));
+ let wins=0,pods=0,poles=0,pts=0;
+ const pointsTable=[25,20,16,13,11,10,9,8,7,6,5,4,3,2,1];
+ const juniorBonus=s.tier===1?5:s.tier===2?2:0;
+ for(let i=0;i<starts;i++){
+   // Qualifying first: a pole gives a tangible race advantage rather than being a disconnected stat.
+   const qualEdge=(state.attrs.qualifying-fieldBase) + perf*.55 + juniorBonus;
+   const poleChance=clamp(.035 + qualEdge/115, .015, s.tier===1?.72:.60);
+   const pole=Math.random()<poleChance;
+   if(pole)poles++;
+
+   // OVR/performance is the main race driver. High OVR riders are especially strong in junior series.
+   const dominance=Math.max(0,state.ovr-(52+s.tier*5));
+   const raceForm=perf + dominance*(s.tier<=2?.28:.16) + juniorBonus + r(-9,9) + (state.attrs.consistency-70)*.09 + (pole?4.5:0);
+   let finish=clamp(Math.round(13-raceForm*.48+r(-2,2)),1,28);
+
+   const winChance=clamp(.018 + Math.max(0,raceForm-2)/52 + (pole?.11:0) + (s.tier===1?Math.max(0,state.ovr-65)/150:0),0,s.tier===1?.78:.58);
+   const podiumChance=clamp(.08 + Math.max(0,raceForm+4)/38 + (pole?.16:0),.03,s.tier===1?.90:.78);
+   const roll=Math.random();
+   if(roll<winChance)finish=1;
+   else if(roll<podiumChance)finish=Math.min(finish,r(2,3));
+
+   if(finish===1)wins++;
+   if(finish<=3)pods++;
+   if(finish<=15)pts+=pointsTable[finish-1];
+ }
+
+ // Results drive the championship. Strong seasons have a slightly friendlier title curve,
+ // especially in talent cups/Moto3 where exceptional youngsters should convert dominance into championships.
+ const pps=pts/starts, podiumRate=pods/starts, winRate=wins/starts, poleRate=poles/starts;
+ let pos;
+ if(pps>=19.5) pos=r(1,2);
+ else if(pps>=16.5) pos=r(1,4);
+ else if(pps>=13) pos=r(2,6);
+ else if(pps>=10) pos=r(4,9);
+ else if(pps>=7) pos=r(7,13);
+ else if(pps>=4) pos=r(10,17);
+ else if(pps>=2) pos=r(14,21);
+ else pos=r(18,28);
+
+ if(wins>=1) pos=Math.min(pos,9);
+ if(wins>=2) pos=Math.min(pos,6);
+ if(wins>=4 || winRate>=.22) pos=Math.min(pos,4);
+ if(podiumRate>=.35) pos=Math.min(pos,5);
+ if(podiumRate>=.50) pos=Math.min(pos,3);
+ if(podiumRate>=.65) pos=Math.min(pos,2);
+ // Pole-heavy seasons usually translate into front-running championship form.
+ if(poleRate>=.35) pos=Math.min(pos,5);
+ if(poleRate>=.50 && podiumRate>=.35) pos=Math.min(pos,3);
+
+ let titleChance=0;
+ if(pos<=2) titleChance += .24;
+ if(pps>=17) titleChance += .22;
+ if(winRate>=.22) titleChance += .20;
+ if(podiumRate>=.55) titleChance += .18;
+ if(poleRate>=.45) titleChance += .08;
+ if(s.tier===1) titleChance += .16;
+ else if(s.tier===2) titleChance += .07;
+ if(state.ovr>=82 && s.tier<=2) titleChance += .14;
+ if(state.ovr>=88 && s.tier<=3) titleChance += .10;
+ titleChance=clamp(titleChance,0,.78);
+ if(pos<=3 && Math.random()<titleChance)pos=1;
+ if(winRate>=.38 && podiumRate>=.60)pos=1;
+
+ let title=pos===1;
+ if(title)state.totals.titles++;
+ state.totals.starts+=starts;state.totals.wins+=wins;state.totals.podiums+=pods;state.totals.poles+=poles;
+ state.history.push({age:state.age,series:state.series,team:state.team,ovr:state.ovr,starts,wins,pods,poles,pts,pos});
+ growDecline(pos,injury,title);
+ if(state.series==="Red Bull Rookies"){
+   const devText=`Development +${state.lastDevelopmentGain} (${state.rookieDevelopment} total).`;
+   event=event?`${event}<br><br><b>${devText}</b>`:devText;
+ }
+ state.age++;
+ fluctuateBikes();
+ if(!event && Math.random()<.14) event=randomEvent();
+ document.getElementById("eventBox").innerHTML=event?`<div class="event">${event}</div>`:"";
+ if(state.age>=44 || (state.age>=38 && state.ovr<60 && Math.random()<.35)){retire();return}
+ generateOffers(pos,title);
+ state.offerPending=true;
+ render();
+}
+function growDecline(pos,injury,title){
+ // Base age curve. Rookie development then modifies this growth.
+ let growth=0;
+ if(state.age<=17)growth=r(3,5);
+ else if(state.age<=21)growth=r(2,4);
+ else if(state.age<=25)growth=r(1,3);
+ else if(state.age<=29)growth=r(0,2);
+ else if(state.age<=34)growth=r(0,1);
+ else if(state.age<=37)growth=r(-1,0);
+ else if(state.age<=40)growth=(Math.random()<.55?-1:0);
+ else growth=r(-2,0);
+
+ let devGain=0, rookieBonus=0;
+ if(state.series==="Red Bull Rookies"){
+   // Hardcoded rookie philosophy: high grid is high risk/high reward, middle is balanced, low grid develops regardless.
+   if(state.rookieGrid==="high"){
+     if(title || pos<=3){devGain=6;rookieBonus=2}
+     else if(pos<=7){devGain=3;rookieBonus=0}
+     else {devGain=1;rookieBonus=-1}
+   }else if(state.rookieGrid==="middle"){
+     if(title || pos<=4){devGain=5;rookieBonus=1}
+     else if(pos<=10){devGain=3;rookieBonus=0}
+     else {devGain=2;rookieBonus=0}
+   }else{
+     devGain=(title||pos<=5)?6:5; rookieBonus=1;
+   }
+   state.rookieDevelopment=(state.rookieDevelopment||0)+devGain;
+   state.lastDevelopmentGain=devGain;
+   growth+=rookieBonus;
+ }else{
+   state.lastDevelopmentGain=0;
+   if(pos<=3 && state.age<=28)growth+=Math.random()<.70?1:0;
+   if(title && state.age<=25)growth+=1;
+ }
+ Object.keys(state.attrs).forEach(k=>state.attrs[k]=clamp(state.attrs[k]+growth+r(-1,1),35,99));
+ if(state.injuryPenalty>0)state.injuryPenalty=Math.max(0,state.injuryPenalty-r(1,3));
+ updateOVR();
+}
+function randomEvent(){
+ const events=[
+   "A factory test goes brilliantly. Your reputation jumps.",
+   "Public criticism of the bike causes tension with team management.",
+   "A wet-weather masterclass becomes the paddock's talking point.",
+   "A huge qualifying crash dents confidence for several rounds.",
+   "You become a fan favourite after an outrageous last-lap overtake."
+ ];
+ return events[r(0,events.length-1)];
+}
+function promotionSeries(pos,title){
+ const age=state.age, o=state.ovr, cur=state.series;
+ const pool=[];
+
+ // Red Bull Rookies is judged primarily on development, not just championship position.
+ if(cur==="Red Bull Rookies"){
+   const dev=state.rookieDevelopment||0;
+   if(dev>=5) pool.push("Moto3");
+   else if(dev>=3) pool.push("WorldSSP");
+   // Lower development deliberately produces no promotion: another Rookies offer follows.
+ }
+
+ // Winning the title guarantees that the next class notices you.
+ if(cur==="Moto3" && title) pool.push("Moto2");
+ if(cur==="Moto2" && title) pool.push("MotoGP");
+ if(cur==="WorldSSP" && title) pool.push("WorldSBK");
+
+ // Strong non-title campaigns can still earn a conventional step up.
+ if(cur==="Moto3" && !title && (pos<=5 || o>=78)) pool.push("Moto2");
+ if(cur==="Moto2" && !title && (pos<=5 || o>=86)) pool.push("MotoGP");
+ if(cur==="WorldSSP" && !title && (pos<=4 || o>=84)) pool.push("WorldSBK");
+
+ // BSB opens as the alternative route for riders who are competitive but not breaking through.
+ if(cur==="Moto2" && !title && pos>=6 && pos<=14) pool.push("BSB");
+ if(cur==="WorldSSP" && !title && pos>=5 && pos<=12) pool.push("BSB");
+
+ // Superbike ladder and late-career movement remain plausible.
+ if(cur==="BSB"){
+   if(title || pos<=5 || o>=82) pool.push("WorldSBK");
+   if(pos>12) pool.push("WorldSSP");
+ }
+ if(cur==="WorldSBK"){
+   if((title || pos<=2) && o>=88 && age<=31) pool.push("MotoGP");
+   if(age>=30 || pos>10) pool.push("BSB");
+ }
+ if(cur==="MotoGP"){
+   if(age>=29 || pos>12) pool.push("WorldSBK");
+   if(age>=32 || pos>16) pool.push("BSB");
+ }
+ return [...new Set(pool)];
+}
+function dropChance(pos,title){
+ if(title) return 0;
+ const exp=teamExpectation(state.series,state.team);
+ const bike=bikeRating();
+ // Stronger bikes demand stronger championship results.
+ if(pos<=exp.target) return 0;
+ let miss=pos-exp.target;
+ let chance=.05 + miss*.055;
+ if(bike>=92) chance+=.14;
+ else if(bike>=87) chance+=.08;
+ else if(bike<=75) chance-=.05;
+ if(state.ovr<60+series[state.series].tier*4) chance+=.05;
+ return clamp(chance,.02,.78);
+}
+function makeOffer(ser,team,renewal=false){
+ const rep=series[ser].tier*12 + state.ovr + r(-6,6);
+ return {series:ser,team,bike:bikeRating(ser,team),salary:Math.max(30,Math.round((rep*rep)/22/10)*10),renewal};
+}
+function generateOffers(pos,title){
+ const oldTeam=state.team, oldSeries=state.series;
+ const promotions=promotionSeries(pos,title);
+ state.offers=[];
+ state.contractMessage="";
+
+ // Rookies has a hardcoded development gate. There is no random paddock lottery here.
+ if(oldSeries==="Red Bull Rookies"){
+   const dev=state.rookieDevelopment||0;
+   const target=dev>=5?"Moto3":dev>=3?"WorldSSP":"Red Bull Rookies";
+   if(target==="Red Bull Rookies"){
+     state.contractMessage=`Development score ${dev}: the next-class teams are not convinced yet. Red Bull Rookies offers you another season.`;
+     ["High Grid","Middle Grid","Low Grid"].forEach(team=>state.offers.push(makeOffer("Red Bull Rookies",team,team===oldTeam)));
+   }else{
+     state.contractMessage=`Development score ${dev}: your rookie programme has earned ${target} interest.`;
+     const teams=teamNames(target).slice().sort(()=>Math.random()-.5).slice(0,3);
+     teams.forEach(team=>state.offers.push(makeOffer(target,team,false)));
+   }
+   return;
+ }
+
+ const dropped=Math.random()<dropChance(pos,title);
+ if(!dropped){
+   state.offers.push(makeOffer(oldSeries,oldTeam,true));
+   state.contractMessage=`${oldTeam} want to keep you for another season.`;
+ }else{
+   state.contractMessage=`${oldTeam} have decided not to renew your contract after this season.`;
+ }
+
+ // If you won Moto3/Moto2/WorldSSP, guarantee at least one offer from the next class before anything else.
+ const guaranteedNext=(oldSeries==="Moto3"&&title)?"Moto2":(oldSeries==="Moto2"&&title)?"MotoGP":(oldSeries==="WorldSSP"&&title)?"WorldSBK":null;
+ if(guaranteedNext){
+   const team=randomTeam(guaranteedNext);
+   if(!state.offers.some(o=>o.series===guaranteedNext&&o.team===team)) state.offers.push(makeOffer(guaranteedNext,team,false));
+   state.contractMessage=`Championship won — ${guaranteedNext} offers are now guaranteed.`;
+ }
+
+ const sameSeriesTeams=teamNames(oldSeries).filter(t=>t!==oldTeam);
+ const externalPool=[oldSeries,...promotions];
+ let guard=0;
+ while(state.offers.length<3 && guard<120){
+   guard++;
+   const ser=externalPool[r(0,externalPool.length-1)];
+   let team;
+   if(ser===oldSeries){
+     if(!sameSeriesTeams.length) continue;
+     team=sameSeriesTeams[r(0,sameSeriesTeams.length-1)];
+   }else team=randomTeam(ser);
+   if(state.offers.some(o=>o.series===ser&&o.team===team)) continue;
+   state.offers.push(makeOffer(ser,team,false));
+ }
+ while(state.offers.length<3){
+   const team=sameSeriesTeams.length?sameSeriesTeams[r(0,sameSeriesTeams.length-1)]:oldTeam;
+   if(!state.offers.some(o=>o.series===oldSeries&&o.team===team)) state.offers.push(makeOffer(oldSeries,team,team===oldTeam));
+   else break;
+ }
+}
+function acceptOffer(i){
+ const o=state.offers[i], wasRookies=state.series==="Red Bull Rookies";
+ state.series=o.series;state.team=o.team;
+ if(o.series==="Red Bull Rookies"){
+   state.rookieGrid=o.team==="High Grid"?"high":o.team==="Middle Grid"?"middle":"low";
+ }else if(wasRookies){
+   state.rookieDevelopment=0; state.lastDevelopmentGain=0;
+ }
+ state.offerPending=false;state.offers=[];render();
+}
+function render(){
+ document.getElementById("riderName").textContent=`#${state.number} ${state.name}`;
+ document.getElementById("riderNation").textContent=state.nation;
+ document.getElementById("currentRide").textContent=`${state.series} · ${state.team}`;
+ document.getElementById("ageChip").textContent=`Age ${state.age}`;
+ document.getElementById("ovr").textContent=state.ovr;
+ ["starts","wins","pods","titles"].forEach((id,i)=>document.getElementById(id).textContent=[state.totals.starts,state.totals.wins,state.totals.podiums,state.totals.titles][i]);
+ document.getElementById("attrs").innerHTML=Object.entries(state.attrs).map(([k,v])=>`<div style="display:grid;grid-template-columns:110px 1fr 38px;gap:8px;align-items:center;margin:7px 0"><span style="font-size:12px;color:var(--muted);text-transform:capitalize">${k}</span><div style="height:8px;border-radius:8px;background:#26303e;overflow:hidden"><div style="height:100%;width:${v}%;background:linear-gradient(90deg,#ff3b30,#ff9d35)"></div></div><b>${v}</b></div>`).join("");
+ const exp=teamExpectation(state.series,state.team), currentBike=bikeRating();
+ const rookieLine=state.series==="Red Bull Rookies"?`<br>Rookie development: <b>${state.rookieDevelopment||0} pts</b> · ${gridConfig[state.rookieGrid].label} philosophy.`:"";
+ document.getElementById("seasonPreview").innerHTML=`You are entering age <b>${state.age}</b> in <b>${state.series}</b> with <b>${state.team}</b>.<br>Current ability: <b>${state.ovr} OVR</b> · Bike: <b>${currentBike}</b>.<br>Team expectation: <b>${exp.label}</b> — target <b>${ordinal(exp.target)} or better</b>.${rookieLine}`;
+ document.getElementById("historyBody").innerHTML=state.history.slice().reverse().map(h=>`<tr><td>${h.age}</td><td>${h.series}</td><td>${h.team}</td><td>${h.ovr}</td><td>${h.starts}</td><td>${h.wins}</td><td>${h.pods}</td><td>${h.poles}</td><td>${h.pts}</td><td>${h.pos===1?"🏆 1st":ordinal(h.pos)}</td></tr>`).join("");
+ let offers=document.getElementById("offers");
+ if(state.offerPending){
+   offers.innerHTML=`<h2>Contract offers</h2><div style="color:var(--muted);font-size:13px;margin-bottom:8px">${state.contractMessage||""}</div>`+state.offers.map((o,i)=>{const ex=teamExpectation(o.series,o.team);return `<div class="offer"><div><strong>${o.team}${o.renewal?" · Current team":""}</strong><small>${o.series} · Bike ${o.bike ?? bikeRating(o.series,o.team)} · ${ex.label} (target ${ordinal(ex.target)}) · €${o.salary}k/year</small></div><button class="secondary" onclick="acceptOffer(${i})">${o.renewal?"Renew":"Sign"}</button></div>`}).join("");
+ }else offers.innerHTML="";
+ document.getElementById("simControls").classList.toggle("hidden",state.offerPending||state.retired);
+}
+function ordinal(n){let s=["th","st","nd","rd"],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0])}
+function retire(){
+ state.retired=true;state.offerPending=false;render();
+ const peak=Math.max(...state.history.map(x=>x.ovr),state.ovr);
+ const best=state.history.length?Math.min(...state.history.map(x=>x.pos)):null;
+ let legacy="Journeyman";
+ if(state.totals.titles>=4||state.totals.wins>=60)legacy="All-time great";
+ else if(state.totals.titles>=2||state.totals.wins>=30)legacy="World-class career";
+ else if(state.totals.titles>=1||state.totals.wins>=12)legacy="Champion & fan favourite";
+ else if(state.totals.podiums>=20)legacy="Cult hero";
+ document.getElementById("retirement").classList.remove("hidden");
+ document.getElementById("retirement").innerHTML=`<h2>🏁 Career complete</h2>
+ <div style="font-size:28px;font-weight:900">${state.name}</div>
+ <p class="gold">${legacy}</p>
+ <div class="statgrid">
+ <div class="stat"><b>${peak}</b><span>Peak OVR</span></div>
+ <div class="stat"><b>${state.totals.starts}</b><span>Starts</span></div>
+ <div class="stat"><b>${state.totals.wins}</b><span>Wins</span></div>
+ <div class="stat"><b>${state.totals.titles}</b><span>Titles</span></div></div>
+ <p style="color:var(--muted)">Best championship finish: ${best===null?"—":ordinal(best)} · Podiums: ${state.totals.podiums} · Poles: ${state.totals.poles}</p>`;
+}
+function resetGame(){
+ state=null; selectedGrid="high";
+ document.getElementById("game").classList.add("hidden");document.getElementById("creator").classList.remove("hidden");
+ document.getElementById("retirement").classList.add("hidden");document.getElementById("eventBox").innerHTML="";
+ document.querySelectorAll("#gridChoices .pillbtn").forEach((b,i)=>b.classList.toggle("active",i===0));
+ document.getElementById("gridHelp").textContent=gridConfig.high.help;
+}
+</script>
+</body>
+</html>
