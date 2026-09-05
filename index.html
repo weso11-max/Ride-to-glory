@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ride to Glory v0.8</title>
+<title>Ride to Glory v0.9</title>
 <style>
 :root{
   --bg:#0b0e12; --panel:#141922; --panel2:#1b2230; --text:#f6f7fb; --muted:#9ca8ba;
@@ -132,7 +132,7 @@ button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:poin
   <div id="retirement" class="card sectiongap hidden"></div>
 </section>
 
-<div class="footer">Ride to Glory — prototype v0.8</div>
+<div class="footer">Ride to Glory — prototype v0.9</div>
 </div>
 
 <script>
@@ -203,12 +203,12 @@ function startCareer(){
 }
 function rollDevelopmentProfile(){
  const x=Math.random();
- // Hidden career ceiling: some riders simply never become elite, while a few blossom.
- if(x<.14) return {name:"stalled",mult:.35};
- if(x<.37) return {name:"slow",mult:.62};
- if(x<.78) return {name:"normal",mult:.85};
- if(x<.96) return {name:"strong",mult:1.02};
- return {name:"prodigy",mult:1.14};
+ // Most riders become respectable professionals; a minority stall and a few explode into elite prospects.
+ if(x<.10) return {name:"stalled",mult:.45};
+ if(x<.30) return {name:"slow",mult:.75};
+ if(x<.75) return {name:"normal",mult:1.00};
+ if(x<.95) return {name:"strong",mult:1.15};
+ return {name:"prodigy",mult:1.30};
 }
 function bikeCeiling(ser,team){
  if(ser==="MotoGP"){
@@ -252,6 +252,16 @@ function updateOVR(){
  state.baseOvr=Math.round((a.pace*1.5+a.racecraft*1.4+a.qualifying+a.wet*.6+a.consistency+a.tyres*.7+a.fitness*.6+a.aggression*.2)/7);
  state.ovr=clamp(state.baseOvr-(state.injuryPenalty||0),35,99);
 }
+function seriesAbilityBoost(){
+ const o=state.ovr, cur=state.series;
+ // These are competitiveness thresholds, not free championships.
+ if(cur==="Red Bull Rookies" && o>=55) return {race:2.8,win:.055,title:.045};
+ if(cur==="WorldSSP" && o>=65) return {race:2.4,win:.045,title:.040};
+ if(cur==="BSB" && o>=80) return {race:2.2,win:.040,title:.035};
+ if(cur==="WorldSBK" && o>=85) return {race:2.0,win:.035,title:.030};
+ if(cur==="MotoGP" && o>=90) return {race:1.8,win:.030,title:.025};
+ return {race:0,win:0,title:0};
+}
 function seasonStrength(){
  let s=series[state.series];
  // Rider ability is the main driver, but the actual team's bike rating now matters every season.
@@ -271,7 +281,7 @@ function seasonStrength(){
 }
 function simulateSeason(){
  if(state.offerPending||state.retired)return;
- const s=series[state.series], strength=seasonStrength(), fieldBase=55+s.tier*5.2;
+ const s=series[state.series], strength=seasonStrength(), fieldBase=55+s.tier*5.2, abilityBoost=seriesAbilityBoost();
  let perf=strength-fieldBase;
  let injury=false, event="";
  let crashRisk=(100-state.attrs.consistency)*0.07 + Math.max(0,state.attrs.aggression-70)*0.045;
@@ -297,10 +307,10 @@ function simulateSeason(){
 
    // OVR/performance is the main race driver. High OVR riders are especially strong in junior series.
    const dominance=Math.max(0,state.ovr-(52+s.tier*5));
-   const raceForm=perf + dominance*(s.tier<=2?.28:.16) + juniorBonus + r(-9,9) + (state.attrs.consistency-70)*.09 + (pole?4.5:0);
+   const raceForm=perf + dominance*(s.tier<=2?.28:.16) + juniorBonus + abilityBoost.race + r(-9,9) + (state.attrs.consistency-70)*.09 + (pole?4.5:0);
    let finish=clamp(Math.round(13-raceForm*.48+r(-2,2)),1,28);
 
-   const winChance=clamp(.018 + Math.max(0,raceForm-2)/52 + (pole?.11:0) + (s.tier===1?Math.max(0,state.ovr-65)/150:0),0,s.tier===1?.78:.58);
+   const winChance=clamp(.018 + Math.max(0,raceForm-2)/52 + (pole?.11:0) + abilityBoost.win + (s.tier===1?Math.max(0,state.ovr-65)/150:0),0,s.tier===1?.78:.58);
    const podiumChance=clamp(.08 + Math.max(0,raceForm+4)/38 + (pole?.16:0),.03,s.tier===1?.90:.78);
    const roll=Math.random();
    if(roll<winChance)finish=1;
@@ -340,6 +350,7 @@ function simulateSeason(){
  if(winRate>=.28) titleChance+=.08;
  if(podiumRate>=.62) titleChance+=.06;
  if(winRate>=.42 && podiumRate>=.72) titleChance+=.08;
+ titleChance+=abilityBoost.title;
 
  const titleCaps={"Red Bull Rookies":.55,"Moto3":.50,"Moto2":.43,"WorldSSP":.44,"BSB":.32,"WorldSBK":.36,"MotoGP":.33};
  let cap=titleCaps[state.series]??.40;
@@ -362,7 +373,7 @@ function simulateSeason(){
  }
  state.totals.starts+=starts;state.totals.wins+=wins;state.totals.podiums+=pods;state.totals.poles+=poles;
  state.history.push({age:state.age,series:state.series,team:state.team,ovr:state.ovr,starts,wins,pods,poles,pts,pos});
- growDecline(pos,injury,title);
+ growDecline(pos,injury,title,wins,pods,starts);
  if(state.series==="Red Bull Rookies"){
    const devText=`Development +${state.lastDevelopmentGain} (${state.rookieDevelopment} total).`;
    event=event?`${event}<br><br><b>${devText}</b>`:devText;
@@ -376,24 +387,46 @@ function simulateSeason(){
  state.offerPending=true;
  render();
 }
-function growDecline(pos,injury,title){
- // Slower, less predictable development. Potential is hidden and some careers simply stall.
+function growDecline(pos,injury,title,wins=0,pods=0,starts=1){
+ // Development is faster than v0.8, but hidden potential and random flat years still create very different careers.
  let baseGrowth=0;
  if(state.age<=17)baseGrowth=r(1,3);
- else if(state.age<=21)baseGrowth=r(0,2);
- else if(state.age<=25)baseGrowth=r(0,1);
- else if(state.age<=29)baseGrowth=Math.random()<.35?1:0;
- else if(state.age<=34)baseGrowth=0;
- else if(state.age<=37)baseGrowth=Math.random()<.45?-1:0;
- else if(state.age<=40)baseGrowth=Math.random()<.60?-1:0;
+ else if(state.age<=21)baseGrowth=r(1,2);
+ else if(state.age<=25)baseGrowth=r(0,2);
+ else if(state.age<=29)baseGrowth=Math.random()<.55?1:0;
+ else if(state.age<=32)baseGrowth=Math.random()<.25?1:0;
+ else if(state.age<=35)baseGrowth=0;
+ else if(state.age<=38)baseGrowth=Math.random()<.45?-1:0;
+ else if(state.age<=40)baseGrowth=Math.random()<.65?-1:0;
  else baseGrowth=r(-2,0);
 
- const profile=state.developmentProfile||{mult:.85};
- // Year-to-year randomness: even a high-potential rider can have a flat season.
+ const profile=state.developmentProfile||{mult:1};
  const seasonDevRoll=Math.random();
- let growth=Math.round(baseGrowth*profile.mult);
- if(seasonDevRoll<.22) growth=Math.min(growth,0);
- else if(seasonDevRoll>.90 && state.age<=24) growth+=1;
+
+ // Championship performance matters. Even an 8th-place season is meaningful development for most young riders.
+ let resultGrowth=0;
+ if(title || pos===1) resultGrowth=4;
+ else if(pos<=3) resultGrowth=3;
+ else if(pos<=8) resultGrowth=2;
+ else if(pos<=12) resultGrowth=1;
+
+ const winRate=wins/Math.max(1,starts), podiumRate=pods/Math.max(1,starts);
+ if(!title && (wins>=3 || winRate>=.18)) resultGrowth+=1;
+ if(!title && podiumRate>=.45) resultGrowth+=1;
+ resultGrowth=Math.min(resultGrowth,5);
+
+ // Older riders learn less from results; by the mid-30s improvement is unusual.
+ if(state.age>=30) resultGrowth=Math.floor(resultGrowth*.55);
+ if(state.age>=34) resultGrowth=0;
+
+ // Hidden potential controls how much of that opportunity becomes actual ability.
+ resultGrowth=Math.round(resultGrowth*profile.mult);
+ let growth=Math.round(baseGrowth*profile.mult)+resultGrowth;
+
+ // Some seasons simply do not click, even for talented riders.
+ if(seasonDevRoll<.10) growth=Math.min(growth,0);
+ else if(seasonDevRoll<.22) growth=Math.floor(growth*.45);
+ else if(seasonDevRoll>.92 && state.age<=24) growth+=1;
 
  let devGain=0, rookieBonus=0;
  if(state.series==="Red Bull Rookies"){
@@ -408,22 +441,19 @@ function growDecline(pos,injury,title){
    }else{
      devGain=(title||pos<=5)?r(4,6):r(3,5); rookieBonus=1;
    }
-   // Career potential also affects how efficiently rookie experience becomes actual ability.
    devGain=Math.max(0,Math.round(devGain*(.65+profile.mult*.4)));
    state.rookieDevelopment=(state.rookieDevelopment||0)+devGain;
    state.lastDevelopmentGain=devGain;
    growth+=rookieBonus;
  }else{
    state.lastDevelopmentGain=0;
-   if(pos<=3 && state.age<=25 && Math.random()<.30)growth+=1;
-   if(title && state.age<=23 && Math.random()<.35)growth+=1;
  }
 
- // Attributes do not all rise together. This creates uneven riders and genuine non-developers.
+ // Attribute growth remains uneven, so riders can still become specialists rather than uniform stat blocks.
  Object.keys(state.attrs).forEach(k=>{
    let delta=growth;
-   if(growth>0 && Math.random()<.38) delta=Math.max(0,growth-1);
-   if(growth===0 && state.age<=25 && Math.random()<.10*profile.mult) delta=1;
+   if(growth>0 && Math.random()<.32) delta=Math.max(0,growth-1);
+   if(growth===0 && state.age<=25 && Math.random()<.12*profile.mult) delta=1;
    if(growth<0 && Math.random()<.28) delta=0;
    state.attrs[k]=clamp(state.attrs[k]+delta,35,99);
  });
@@ -518,13 +548,25 @@ function generateOffers(pos,title){
 
  if(oldSeries==="Red Bull Rookies"){
    const dev=state.rookieDevelopment||0;
+   const rookieYears=seasonsInSeries("Red Bull Rookies");
    const target=dev>=5?"Moto3":dev>=3?"WorldSSP":"Red Bull Rookies";
+
    if(target==="Red Bull Rookies"){
      state.contractMessage=`Development score ${dev}: the next-class teams are not convinced yet. Red Bull Rookies offers you another season.`;
      ["High Grid","Middle Grid","Low Grid"].forEach(team=>state.offers.push(makeOffer("Red Bull Rookies",team,team===oldTeam)));
    }else{
      state.contractMessage=`Development score ${dev}: your rookie programme has earned ${target} interest.`;
-     shuffled(teamNames(target)).slice(0,3).forEach(team=>state.offers.push(makeOffer(target,team,false)));
+     const nextTeams=shuffled(teamNames(target));
+
+     // In years two and three, a 55+ OVR rider can choose to stay in Rookies rather than being forced upward.
+     if(state.ovr>=55 && rookieYears>=1 && rookieYears<=3){
+       nextTeams.slice(0,2).forEach(team=>state.offers.push(makeOffer(target,team,false)));
+       const rookieTeam=shuffled(["High Grid","Middle Grid","Low Grid"])[0];
+       state.offers.push(makeOffer("Red Bull Rookies",rookieTeam,rookieTeam===oldTeam));
+       state.contractMessage+=` Red Bull Rookies will also keep a 55+ OVR rider for another development year.`;
+     }else{
+       nextTeams.slice(0,3).forEach(team=>state.offers.push(makeOffer(target,team,false)));
+     }
    }
    return;
  }
