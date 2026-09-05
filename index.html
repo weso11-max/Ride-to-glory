@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ride to Glory</title>
+<title>Ride to Glory v0.8</title>
 <style>
 :root{
   --bg:#0b0e12; --panel:#141922; --panel2:#1b2230; --text:#f6f7fb; --muted:#9ca8ba;
@@ -55,13 +55,13 @@ button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:poin
     <div class="row">
       <div><label>Rider name</label><input id="name" value="" placeholder="Enter your name"></div>
       <div><label>Nationality</label>
-        <select id="nation">
+        <select id="nation"><option value="" selected disabled>Select nationality</option>
           <option>United Kingdom</option><option>Spain</option><option>Italy</option><option>France</option>
           <option>Australia</option><option>Japan</option><option>United States</option><option>Ireland</option>
           <option>Netherlands</option><option>Germany</option><option>South Africa</option><option>Other</option>
         </select>
       </div>
-      <div><label>Race number</label><input id="number" type="number" min="1" max="99" value="27"></div>
+      <div><label>Race number</label><input id="number" type="number" min="1" max="99"></div>
       <div><label>Riding style</label>
         <select id="style">
           <option value="balanced">Balanced</option>
@@ -109,10 +109,6 @@ button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:poin
         <div class="stat"><b id="pods">0</b><span>Podiums</span></div>
         <div class="stat"><b id="titles">0</b><span>Titles</span></div>
       </div>
-      <div class="sectiongap">
-        <h2>Rider attributes</h2>
-        <div id="attrs"></div>
-      </div>
       <div id="eventBox"></div>
       <div id="simControls" class="sectiongap">
         <button class="primary" style="width:100%;font-size:17px" onclick="simulateSeason()">Simulate season</button>
@@ -136,7 +132,7 @@ button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:poin
   <div id="retirement" class="card sectiongap hidden"></div>
 </section>
 
-<div class="footer">Ride to Glory — prototype v0.5</div>
+<div class="footer">Ride to Glory — prototype v0.8</div>
 </div>
 
 <script>
@@ -147,8 +143,34 @@ const series = {
  "Moto2": {tier:3, races:20, teams:[{name:"Marc VDS",bike:90},{name:"Speed Up",bike:84},{name:"Ajo Racing",bike:92},{name:"Intact GP",bike:87},{name:"American Racing",bike:80}]},
  "BSB": {tier:4, races:27, teams:[{name:"PBM Ducati",bike:93},{name:"OMG Yamaha",bike:88},{name:"Honda Racing UK",bike:86},{name:"FS-3 Kawasaki",bike:82},{name:"BMW Motorrad UK",bike:89}]},
  "WorldSBK": {tier:5, races:36, teams:[{name:"Ducati Factory",bike:96},{name:"Yamaha Factory",bike:90},{name:"BMW Motorrad",bike:94},{name:"Kawasaki Racing",bike:88},{name:"Honda HRC",bike:84}]},
- "MotoGP": {tier:6, races:22, teams:[{name:"Ducati Lenovo",bike:97},{name:"Yamaha Factory",bike:88},{name:"Honda HRC",bike:85},{name:"KTM Factory",bike:91},{name:"Aprilia Racing",bike:93},{name:"Gresini",bike:92},{name:"Pramac",bike:90}]}
+ "MotoGP": {tier:6, races:22, teams:[{name:"Ducati Lenovo",bike:96},{name:"Yamaha Factory",bike:90},{name:"Honda HRC",bike:88},{name:"KTM Factory",bike:92},{name:"Aprilia Racing",bike:93},{name:"Gresini",bike:87},{name:"Pramac",bike:86}]}
 };
+const motoGPFactoryTeams=["Ducati Lenovo","Yamaha Factory","Honda HRC","KTM Factory","Aprilia Racing"];
+const motoGPSatelliteTeams=["Gresini","Pramac"];
+
+function seasonsInSeries(ser){
+ return state.history.filter(h=>h.series===ser).length;
+}
+function recentSeriesResults(ser,count=4){
+ return state.history.filter(h=>h.series===ser).slice(-count);
+}
+function topFiveCount(ser,count=4){
+ return recentSeriesResults(ser,count).filter(h=>h.pos<=5).length;
+}
+function yearsWithoutTitleInSeries(ser){
+ const rows=state.history.filter(h=>h.series===ser);
+ let streak=0;
+ for(let i=rows.length-1;i>=0;i--){
+   if(rows[i].pos===1) break;
+   streak++;
+ }
+ return streak;
+}
+function hasRecentSuccess(ser){
+ const rows=recentSeriesResults(ser,2);
+ return rows.some(h=>h.pos<=6);
+}
+function shuffled(arr){return arr.slice().sort(()=>Math.random()-.5)}
 let state=null, selectedGrid="high";
 const gridConfig={
  high:{team:"High Grid",label:"High grid",help:"Fastest rookie bike. Big results earn bonus development; underperforming slows your growth."},
@@ -176,8 +198,25 @@ function startCareer(){
  let attrs={pace:r(52,60),racecraft:r(50,59),qualifying:r(49,59),wet:r(45,60),consistency:r(49,60),tyres:r(48,59),fitness:r(53,62),aggression:r(48,60)};
  Object.keys(attrs).forEach(k=>attrs[k]=clamp(attrs[k]+mods[k],35,99));
  state={name,nation:document.getElementById("nation").value,number:+document.getElementById("number").value||27,style,age:14,series:"Red Bull Rookies",
- team:gridConfig[selectedGrid].team,rookieGrid:selectedGrid,rookieDevelopment:0,lastDevelopmentGain:0,attrs,ovr:0,baseOvr:0,injuryPenalty:0,teamRatings:initTeamRatings(),history:[],totals:{starts:0,wins:0,podiums:0,poles:0,titles:0},offerPending:false,retired:false};
+ team:gridConfig[selectedGrid].team,rookieGrid:selectedGrid,rookieDevelopment:0,lastDevelopmentGain:0,developmentProfile:rollDevelopmentProfile(),consecutiveTitles:0,lastTitleSeries:null,attrs,ovr:0,baseOvr:0,injuryPenalty:0,teamRatings:initTeamRatings(),history:[],totals:{starts:0,wins:0,podiums:0,poles:0,titles:0},offerPending:false,retired:false};
  updateOVR(); document.getElementById("creator").classList.add("hidden");document.getElementById("game").classList.remove("hidden");render();
+}
+function rollDevelopmentProfile(){
+ const x=Math.random();
+ // Hidden career ceiling: some riders simply never become elite, while a few blossom.
+ if(x<.14) return {name:"stalled",mult:.35};
+ if(x<.37) return {name:"slow",mult:.62};
+ if(x<.78) return {name:"normal",mult:.85};
+ if(x<.96) return {name:"strong",mult:1.02};
+ return {name:"prodigy",mult:1.14};
+}
+function bikeCeiling(ser,team){
+ if(ser==="MotoGP"){
+   if(["Ducati Lenovo","Yamaha Factory","Honda HRC","KTM Factory","Aprilia Racing"].includes(team)) return 98;
+   return 90; // satellite/independent teams can be excellent, but never become a 99-rated superteam
+ }
+ if(ser==="WorldSBK") return ["Ducati Factory","Yamaha Factory","BMW Motorrad","Kawasaki Racing","Honda HRC"].includes(team)?97:92;
+ return 96;
 }
 function initTeamRatings(){
  const out={};
@@ -200,8 +239,11 @@ function fluctuateBikes(){
  Object.entries(state.teamRatings).forEach(([ser,teams])=>{
    Object.keys(teams).forEach(team=>{
      const tier=series[ser].tier;
-     const swing=tier<=2?r(-3,3):r(-2,2);
-     teams[team]=clamp(teams[team]+swing,48,99);
+     // Development is evolutionary, not an endless march to 99. Top-class satellite bikes have hard ceilings.
+     const swing=tier<=2?r(-2,2):r(-1,1);
+     const base=series[ser].teams.find(t=>t.name===team)?.bike ?? teams[team];
+     const floor=Math.max(48,base-7);
+     teams[team]=clamp(teams[team]+swing,floor,bikeCeiling(ser,team));
    });
  });
 }
@@ -214,7 +256,18 @@ function seasonStrength(){
  let s=series[state.series];
  // Rider ability is the main driver, but the actual team's bike rating now matters every season.
  const riderWeight=s.tier<=2?.84:s.tier===3?.78:s.tier===4?.74:.70;
- return state.ovr*riderWeight + bikeRating()*(1-riderWeight) + r(-3,3);
+ let effectiveOvr=state.ovr;
+ let familiarity=0;
+ if(state.series==="BSB"){
+   // World-level stars arrive as contenders, not automatic champions: BSB compresses the advantage above elite domestic level.
+   if(effectiveOvr>86) effectiveOvr=86+(effectiveOvr-86)*.48;
+   // British riders get a small track-familiarity edge without changing their displayed OVR.
+   if(state.nation==="United Kingdom") familiarity=2;
+   // Any rider with previous BSB experience builds a little extra track knowledge.
+   const priorBSB=Math.max(0,seasonsInSeries("BSB")-1);
+   familiarity+=Math.min(2,priorBSB);
+ }
+ return effectiveOvr*riderWeight + bikeRating()*(1-riderWeight) + familiarity + r(-4,3);
 }
 function simulateSeason(){
  if(state.offerPending||state.retired)return;
@@ -258,45 +311,55 @@ function simulateSeason(){
    if(finish<=15)pts+=pointsTable[finish-1];
  }
 
- // Results drive the championship. Strong seasons have a slightly friendlier title curve,
- // especially in talent cups/Moto3 where exceptional youngsters should convert dominance into championships.
+ // Championship position now assumes a genuinely competitive field. Great seasons put you in contention; they do not hand you the title.
  const pps=pts/starts, podiumRate=pods/starts, winRate=wins/starts, poleRate=poles/starts;
  let pos;
- if(pps>=19.5) pos=r(1,2);
- else if(pps>=16.5) pos=r(1,4);
- else if(pps>=13) pos=r(2,6);
- else if(pps>=10) pos=r(4,9);
- else if(pps>=7) pos=r(7,13);
- else if(pps>=4) pos=r(10,17);
- else if(pps>=2) pos=r(14,21);
+ if(pps>=20.5) pos=r(1,4);
+ else if(pps>=17.5) pos=r(1,6);
+ else if(pps>=14.5) pos=r(2,8);
+ else if(pps>=11.5) pos=r(4,11);
+ else if(pps>=8) pos=r(6,14);
+ else if(pps>=5) pos=r(9,18);
+ else if(pps>=2.5) pos=r(13,22);
  else pos=r(18,28);
 
- if(wins>=1) pos=Math.min(pos,9);
- if(wins>=2) pos=Math.min(pos,6);
- if(wins>=4 || winRate>=.22) pos=Math.min(pos,4);
- if(podiumRate>=.35) pos=Math.min(pos,5);
- if(podiumRate>=.50) pos=Math.min(pos,3);
- if(podiumRate>=.65) pos=Math.min(pos,2);
- // Pole-heavy seasons usually translate into front-running championship form.
- if(poleRate>=.35) pos=Math.min(pos,5);
- if(poleRate>=.50 && podiumRate>=.35) pos=Math.min(pos,3);
+ if(wins>=2) pos=Math.min(pos,8);
+ if(wins>=4 || winRate>=.20) pos=Math.min(pos,6);
+ if(wins>=7 || winRate>=.30) pos=Math.min(pos,4);
+ if(podiumRate>=.45) pos=Math.min(pos,6);
+ if(podiumRate>=.60) pos=Math.min(pos,4);
+ if(podiumRate>=.72) pos=Math.min(pos,3);
+ if(poleRate>=.50 && podiumRate>=.45) pos=Math.min(pos,5);
 
+ // Being championship-calibre only earns a shot at P1. A rival can still beat you over a full season.
  let titleChance=0;
- if(pos<=2) titleChance += .24;
- if(pps>=17) titleChance += .22;
- if(winRate>=.22) titleChance += .20;
- if(podiumRate>=.55) titleChance += .18;
- if(poleRate>=.45) titleChance += .08;
- if(s.tier===1) titleChance += .16;
- else if(s.tier===2) titleChance += .07;
- if(state.ovr>=82 && s.tier<=2) titleChance += .14;
- if(state.ovr>=88 && s.tier<=3) titleChance += .10;
- titleChance=clamp(titleChance,0,.78);
- if(pos<=3 && Math.random()<titleChance)pos=1;
- if(winRate>=.38 && podiumRate>=.60)pos=1;
+ if(pos===1) titleChance=.52;
+ else if(pos===2) titleChance=.25;
+ else if(pos===3) titleChance=.10;
+ if(pps>=18) titleChance+=.08;
+ if(winRate>=.28) titleChance+=.08;
+ if(podiumRate>=.62) titleChance+=.06;
+ if(winRate>=.42 && podiumRate>=.72) titleChance+=.08;
+
+ const titleCaps={"Red Bull Rookies":.55,"Moto3":.50,"Moto2":.43,"WorldSSP":.44,"BSB":.32,"WorldSBK":.36,"MotoGP":.33};
+ let cap=titleCaps[state.series]??.40;
+ // Repeating is intentionally difficult: the field reacts and rivals improve.
+ if(state.lastTitleSeries===state.series && state.consecutiveTitles>=1) cap*=.68;
+ if(state.lastTitleSeries===state.series && state.consecutiveTitles>=2) cap*=.72;
+ titleChance=clamp(titleChance,0,cap);
+
+ // Only riders already in the top three can convert the season into a championship.
+ if(pos<=3 && Math.random()<titleChance) pos=1;
+ else if(pos===1) pos=r(2,4);
 
  let title=pos===1;
- if(title)state.totals.titles++;
+ if(title){
+   state.totals.titles++;
+   if(state.lastTitleSeries===state.series) state.consecutiveTitles=(state.consecutiveTitles||0)+1;
+   else {state.lastTitleSeries=state.series;state.consecutiveTitles=1;}
+ }else if(state.lastTitleSeries===state.series){
+   state.consecutiveTitles=0;
+ }
  state.totals.starts+=starts;state.totals.wins+=wins;state.totals.podiums+=pods;state.totals.poles+=poles;
  state.history.push({age:state.age,series:state.series,team:state.team,ovr:state.ovr,starts,wins,pods,poles,pts,pos});
  growDecline(pos,injury,title);
@@ -314,40 +377,56 @@ function simulateSeason(){
  render();
 }
 function growDecline(pos,injury,title){
- // Base age curve. Rookie development then modifies this growth.
- let growth=0;
- if(state.age<=17)growth=r(3,5);
- else if(state.age<=21)growth=r(2,4);
- else if(state.age<=25)growth=r(1,3);
- else if(state.age<=29)growth=r(0,2);
- else if(state.age<=34)growth=r(0,1);
- else if(state.age<=37)growth=r(-1,0);
- else if(state.age<=40)growth=(Math.random()<.55?-1:0);
- else growth=r(-2,0);
+ // Slower, less predictable development. Potential is hidden and some careers simply stall.
+ let baseGrowth=0;
+ if(state.age<=17)baseGrowth=r(1,3);
+ else if(state.age<=21)baseGrowth=r(0,2);
+ else if(state.age<=25)baseGrowth=r(0,1);
+ else if(state.age<=29)baseGrowth=Math.random()<.35?1:0;
+ else if(state.age<=34)baseGrowth=0;
+ else if(state.age<=37)baseGrowth=Math.random()<.45?-1:0;
+ else if(state.age<=40)baseGrowth=Math.random()<.60?-1:0;
+ else baseGrowth=r(-2,0);
+
+ const profile=state.developmentProfile||{mult:.85};
+ // Year-to-year randomness: even a high-potential rider can have a flat season.
+ const seasonDevRoll=Math.random();
+ let growth=Math.round(baseGrowth*profile.mult);
+ if(seasonDevRoll<.22) growth=Math.min(growth,0);
+ else if(seasonDevRoll>.90 && state.age<=24) growth+=1;
 
  let devGain=0, rookieBonus=0;
  if(state.series==="Red Bull Rookies"){
-   // Hardcoded rookie philosophy: high grid is high risk/high reward, middle is balanced, low grid develops regardless.
    if(state.rookieGrid==="high"){
-     if(title || pos<=3){devGain=6;rookieBonus=2}
-     else if(pos<=7){devGain=3;rookieBonus=0}
-     else {devGain=1;rookieBonus=-1}
+     if(title || pos<=3){devGain=r(4,6);rookieBonus=1}
+     else if(pos<=7){devGain=r(2,4);rookieBonus=0}
+     else {devGain=r(0,2);rookieBonus=-1}
    }else if(state.rookieGrid==="middle"){
-     if(title || pos<=4){devGain=5;rookieBonus=1}
-     else if(pos<=10){devGain=3;rookieBonus=0}
-     else {devGain=2;rookieBonus=0}
+     if(title || pos<=4){devGain=r(3,5);rookieBonus=1}
+     else if(pos<=10){devGain=r(2,4);rookieBonus=0}
+     else {devGain=r(1,3);rookieBonus=0}
    }else{
-     devGain=(title||pos<=5)?6:5; rookieBonus=1;
+     devGain=(title||pos<=5)?r(4,6):r(3,5); rookieBonus=1;
    }
+   // Career potential also affects how efficiently rookie experience becomes actual ability.
+   devGain=Math.max(0,Math.round(devGain*(.65+profile.mult*.4)));
    state.rookieDevelopment=(state.rookieDevelopment||0)+devGain;
    state.lastDevelopmentGain=devGain;
    growth+=rookieBonus;
  }else{
    state.lastDevelopmentGain=0;
-   if(pos<=3 && state.age<=28)growth+=Math.random()<.70?1:0;
-   if(title && state.age<=25)growth+=1;
+   if(pos<=3 && state.age<=25 && Math.random()<.30)growth+=1;
+   if(title && state.age<=23 && Math.random()<.35)growth+=1;
  }
- Object.keys(state.attrs).forEach(k=>state.attrs[k]=clamp(state.attrs[k]+growth+r(-1,1),35,99));
+
+ // Attributes do not all rise together. This creates uneven riders and genuine non-developers.
+ Object.keys(state.attrs).forEach(k=>{
+   let delta=growth;
+   if(growth>0 && Math.random()<.38) delta=Math.max(0,growth-1);
+   if(growth===0 && state.age<=25 && Math.random()<.10*profile.mult) delta=1;
+   if(growth<0 && Math.random()<.28) delta=0;
+   state.attrs[k]=clamp(state.attrs[k]+delta,35,99);
+ });
  if(state.injuryPenalty>0)state.injuryPenalty=Math.max(0,state.injuryPenalty-r(1,3));
  updateOVR();
 }
@@ -365,41 +444,52 @@ function promotionSeries(pos,title){
  const age=state.age, o=state.ovr, cur=state.series;
  const pool=[];
 
- // Red Bull Rookies is judged primarily on development, not just championship position.
  if(cur==="Red Bull Rookies"){
    const dev=state.rookieDevelopment||0;
    if(dev>=5) pool.push("Moto3");
    else if(dev>=3) pool.push("WorldSSP");
-   // Lower development deliberately produces no promotion: another Rookies offer follows.
  }
 
- // Winning the title guarantees that the next class notices you.
+ // Titles create the clean, expected next step.
  if(cur==="Moto3" && title) pool.push("Moto2");
  if(cur==="Moto2" && title) pool.push("MotoGP");
  if(cur==="WorldSSP" && title) pool.push("WorldSBK");
 
- // Strong non-title campaigns can still earn a conventional step up.
- if(cur==="Moto3" && !title && (pos<=5 || o>=78)) pool.push("Moto2");
- if(cur==="Moto2" && !title && (pos<=5 || o>=86)) pool.push("MotoGP");
- if(cur==="WorldSSP" && !title && (pos<=4 || o>=84)) pool.push("WorldSBK");
+ // Moto3 can still promote a genuinely strong non-champion.
+ if(cur==="Moto3" && !title && (pos<=4 || o>=80)) pool.push("Moto2");
 
- // BSB opens as the alternative route for riders who are competitive but not breaking through.
- if(cur==="Moto2" && !title && pos>=6 && pos<=14) pool.push("BSB");
- if(cur==="WorldSSP" && !title && pos>=5 && pos<=12) pool.push("BSB");
-
- // Superbike ladder and late-career movement remain plausible.
- if(cur==="BSB"){
-   if(title || pos<=5 || o>=82) pool.push("WorldSBK");
-   if(pos>12) pool.push("WorldSSP");
+ // MotoGP interest without a Moto2 title requires sustained evidence: at least 3 top-five seasons in the last 4.
+ if(cur==="Moto2" && !title){
+   const recent=recentSeriesResults("Moto2",4);
+   const top5=recent.filter(h=>h.pos<=5).length;
+   if(recent.length>=3 && top5>=3){
+     const callChance=recent.length>=4 && top5===4 ? .85 : .65;
+     if(Math.random()<callChance) pool.push("MotoGP");
+   }
  }
+
+ // WorldSSP remains the direct feeder to WorldSBK for standout non-title seasons.
+ if(cur==="WorldSSP" && !title && (pos<=3 || (pos<=5 && o>=84))) pool.push("WorldSBK");
+
+ // BSB recruits riders whose world-championship route has stalled for three seasons.
+ if(cur==="Moto2" && !title && yearsWithoutTitleInSeries("Moto2")>=3 && !pool.includes("MotoGP")) pool.push("BSB");
+ if(cur==="WorldSSP" && !title && yearsWithoutTitleInSeries("WorldSSP")>=3 && !pool.includes("WorldSBK")) pool.push("BSB");
+
+ if(cur==="BSB"){
+   if(title || (pos<=3 && o>=82)) pool.push("WorldSBK");
+   if(pos>14) pool.push("WorldSSP");
+ }
+
+ // Older, unsuccessful world-level riders can finish their careers in BSB.
  if(cur==="WorldSBK"){
    if((title || pos<=2) && o>=88 && age<=31) pool.push("MotoGP");
-   if(age>=30 || pos>10) pool.push("BSB");
+   if(age>=32 && (pos>8 || !hasRecentSuccess("WorldSBK"))) pool.push("BSB");
  }
  if(cur==="MotoGP"){
-   if(age>=29 || pos>12) pool.push("WorldSBK");
-   if(age>=32 || pos>16) pool.push("BSB");
+   if(age>=29 && pos>12) pool.push("WorldSBK");
+   if(age>=32 && (pos>8 || !hasRecentSuccess("MotoGP"))) pool.push("BSB");
  }
+
  return [...new Set(pool)];
 }
 function dropChance(pos,title){
@@ -426,7 +516,6 @@ function generateOffers(pos,title){
  state.offers=[];
  state.contractMessage="";
 
- // Rookies has a hardcoded development gate. There is no random paddock lottery here.
  if(oldSeries==="Red Bull Rookies"){
    const dev=state.rookieDevelopment||0;
    const target=dev>=5?"Moto3":dev>=3?"WorldSSP":"Red Bull Rookies";
@@ -435,9 +524,24 @@ function generateOffers(pos,title){
      ["High Grid","Middle Grid","Low Grid"].forEach(team=>state.offers.push(makeOffer("Red Bull Rookies",team,team===oldTeam)));
    }else{
      state.contractMessage=`Development score ${dev}: your rookie programme has earned ${target} interest.`;
-     const teams=teamNames(target).slice().sort(()=>Math.random()-.5).slice(0,3);
-     teams.forEach(team=>state.offers.push(makeOffer(target,team,false)));
+     shuffled(teamNames(target)).slice(0,3).forEach(team=>state.offers.push(makeOffer(target,team,false)));
    }
+   return;
+ }
+
+ // Moto2 champion: normally two satellite MotoGP offers and one Moto2 option.
+ // A rookie-season Moto2 champion is treated as a generational prospect and factory teams fight for the signature.
+ if(oldSeries==="Moto2" && title){
+   const rookieMoto2=seasonsInSeries("Moto2")===1;
+   const gpPool=rookieMoto2?motoGPFactoryTeams:motoGPSatelliteTeams;
+   shuffled(gpPool).slice(0,2).forEach(team=>state.offers.push(makeOffer("MotoGP",team,false)));
+
+   const moto2Options=teamNames("Moto2").filter(t=>t!==oldTeam);
+   const moto2Team=Math.random()<.55?oldTeam:shuffled(moto2Options)[0];
+   state.offers.push(makeOffer("Moto2",moto2Team,moto2Team===oldTeam));
+   state.contractMessage=rookieMoto2
+     ?"Moto2 champion at the first attempt — factory MotoGP teams are fighting for your signature."
+     :"Moto2 champion — two satellite MotoGP seats are on the table, with Moto2 still available.";
    return;
  }
 
@@ -449,16 +553,35 @@ function generateOffers(pos,title){
    state.contractMessage=`${oldTeam} have decided not to renew your contract after this season.`;
  }
 
- // If you won Moto3/Moto2/WorldSSP, guarantee at least one offer from the next class before anything else.
- const guaranteedNext=(oldSeries==="Moto3"&&title)?"Moto2":(oldSeries==="Moto2"&&title)?"MotoGP":(oldSeries==="WorldSSP"&&title)?"WorldSBK":null;
+ // Other championship wins guarantee the expected next category.
+ const guaranteedNext=(oldSeries==="Moto3"&&title)?"Moto2":(oldSeries==="WorldSSP"&&title)?"WorldSBK":null;
  if(guaranteedNext){
    const team=randomTeam(guaranteedNext);
    if(!state.offers.some(o=>o.series===guaranteedNext&&o.team===team)) state.offers.push(makeOffer(guaranteedNext,team,false));
-   state.contractMessage=`Championship won — ${guaranteedNext} offers are now guaranteed.`;
+   state.contractMessage=`Championship won — ${guaranteedNext} offers are guaranteed.`;
+ }
+
+ // Non-title MotoGP calls from Moto2 are satellite-only.
+ if(oldSeries==="Moto2" && !title && promotions.includes("MotoGP") && state.offers.length<3){
+   const team=shuffled(motoGPSatelliteTeams).find(t=>!state.offers.some(o=>o.series==="MotoGP"&&o.team===t));
+   if(team){
+     state.offers.push(makeOffer("MotoGP",team,false));
+     state.contractMessage="Years of consistent Moto2 top-five finishes have finally attracted satellite MotoGP interest.";
+   }
+ }
+
+ // BSB interest is explicitly a career-redirection offer, not a generic promotion.
+ if(promotions.includes("BSB") && state.offers.length<3){
+   const team=shuffled(teamNames("BSB")).find(t=>!state.offers.some(o=>o.series==="BSB"&&o.team===t));
+   if(team){
+     state.offers.push(makeOffer("BSB",team,false));
+     if(oldSeries==="Moto2"||oldSeries==="WorldSSP") state.contractMessage="Three years without the world-title breakthrough — BSB teams see you as a potential front-runner.";
+     else state.contractMessage="A leading BSB team is offering an experienced world-level rider a new chapter.";
+   }
  }
 
  const sameSeriesTeams=teamNames(oldSeries).filter(t=>t!==oldTeam);
- const externalPool=[oldSeries,...promotions];
+ const externalPool=[oldSeries,...promotions.filter(p=>p!=="MotoGP"&&p!=="BSB")];
  let guard=0;
  while(state.offers.length<3 && guard<120){
    guard++;
@@ -471,10 +594,12 @@ function generateOffers(pos,title){
    if(state.offers.some(o=>o.series===ser&&o.team===team)) continue;
    state.offers.push(makeOffer(ser,team,false));
  }
+
  while(state.offers.length<3){
-   const team=sameSeriesTeams.length?sameSeriesTeams[r(0,sameSeriesTeams.length-1)]:oldTeam;
-   if(!state.offers.some(o=>o.series===oldSeries&&o.team===team)) state.offers.push(makeOffer(oldSeries,team,team===oldTeam));
-   else break;
+   const candidates=[oldTeam,...sameSeriesTeams].filter(t=>!state.offers.some(o=>o.series===oldSeries&&o.team===t));
+   if(!candidates.length) break;
+   const team=candidates[0];
+   state.offers.push(makeOffer(oldSeries,team,team===oldTeam));
  }
 }
 function acceptOffer(i){
@@ -494,7 +619,6 @@ function render(){
  document.getElementById("ageChip").textContent=`Age ${state.age}`;
  document.getElementById("ovr").textContent=state.ovr;
  ["starts","wins","pods","titles"].forEach((id,i)=>document.getElementById(id).textContent=[state.totals.starts,state.totals.wins,state.totals.podiums,state.totals.titles][i]);
- document.getElementById("attrs").innerHTML=Object.entries(state.attrs).map(([k,v])=>`<div style="display:grid;grid-template-columns:110px 1fr 38px;gap:8px;align-items:center;margin:7px 0"><span style="font-size:12px;color:var(--muted);text-transform:capitalize">${k}</span><div style="height:8px;border-radius:8px;background:#26303e;overflow:hidden"><div style="height:100%;width:${v}%;background:linear-gradient(90deg,#ff3b30,#ff9d35)"></div></div><b>${v}</b></div>`).join("");
  const exp=teamExpectation(state.series,state.team), currentBike=bikeRating();
  const rookieLine=state.series==="Red Bull Rookies"?`<br>Rookie development: <b>${state.rookieDevelopment||0} pts</b> · ${gridConfig[state.rookieGrid].label} philosophy.`:"";
  document.getElementById("seasonPreview").innerHTML=`You are entering age <b>${state.age}</b> in <b>${state.series}</b> with <b>${state.team}</b>.<br>Current ability: <b>${state.ovr} OVR</b> · Bike: <b>${currentBike}</b>.<br>Team expectation: <b>${exp.label}</b> — target <b>${ordinal(exp.target)} or better</b>.${rookieLine}`;
