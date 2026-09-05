@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ride to Glory v0.12.1</title>
+<title>Ride to Glory v0.13</title>
 <style>
 :root{
   --bg:#0b0e12; --panel:#141922; --panel2:#1b2230; --text:#f6f7fb; --muted:#9ca8ba;
@@ -132,7 +132,7 @@ button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:poin
   <div id="retirement" class="card sectiongap hidden"></div>
 </section>
 
-<div class="footer">Ride to Glory — prototype v0.12.1</div>
+<div class="footer">Ride to Glory — prototype v0.13</div>
 </div>
 
 <script>
@@ -185,6 +185,65 @@ function aiBaseOvr(ser){
  const ranges={"Red Bull Rookies":[50,64],"Moto3":[60,76],"WorldSSP":[66,82],"Moto2":[68,84],"BSB":[76,89],"WorldSBK":[82,93],"MotoGP":[85,94]};
  const q=ranges[ser]||[60,80];return r(q[0],q[1]);
 }
+
+function seedAIReputation(ser,ovr,name){
+ const base={"Red Bull Rookies":0,"Moto3":8,"WorldSSP":16,"Moto2":18,"BSB":24,"WorldSBK":38,"MotoGP":48}[ser]||0;
+ const legends=["Marc Marquez","Francesco Bagnaia","Jorge Martin","Fabio Quartararo","Toprak Razgatlioglu","Alvaro Bautista"];
+ if(name==="Marc Marquez")return 99;
+ return clamp(base+Math.max(0,ovr-80)+(legends.includes(name)?18:0),0,96);
+}
+function reputationGain(ser,pos,wins,pods,expectation,title){
+ const titleGain={"Red Bull Rookies":8,"Moto3":12,"WorldSSP":13,"Moto2":16,"BSB":14,"WorldSBK":20,"MotoGP":25}[ser]||8;
+ let g=0;
+ if(title)g+=titleGain;
+ else if(pos===2)g+=Math.round(titleGain*.55);
+ else if(pos===3)g+=Math.round(titleGain*.38);
+ else if(pos<=5)g+=Math.max(1,Math.round(titleGain*.16));
+ g+=Math.min(ser==="MotoGP"||ser==="WorldSBK"?5:4,Math.floor(wins/3));
+ g+=Math.min(3,Math.floor(pods/6));
+ if(expectation && pos<=expectation.target-3)g+=3;
+ else if(expectation && pos<expectation.target)g+=1;
+ return Math.max(0,g);
+}
+function reputationFloor(){
+ const h=state.history||[];
+ const gp=h.filter(x=>x.series==="MotoGP"&&x.pos===1).length;
+ const wsbk=h.filter(x=>x.series==="WorldSBK"&&x.pos===1).length;
+ if(gp>=4)return 95;if(gp>=2)return 85;if(gp>=1)return 70;
+ if(wsbk>=3)return 78;if(wsbk>=1)return 58;
+ return 0;
+}
+function updatePlayerReputation(ser,pos,wins,pods,expectation,title){
+ state.reputation=clamp((state.reputation||0)+reputationGain(ser,pos,wins,pods,expectation,title),0,100);
+ // Prestige is sticky. Only tiny late-career erosion, and major achievements create a permanent floor.
+ if(state.age>=39 && Math.random()<.18)state.reputation=Math.max(reputationFloor(),state.reputation-1);
+}
+function ageMarketFactor(age){
+ if(age<=24)return 1.08;if(age<=30)return 1;if(age<=34)return .94;if(age<=38)return .82;
+ if(age<=41)return .65;if(age<=44)return .45;return .25;
+}
+function contractValue(ser=state.series){
+ const recent=(state.history||[]).slice(-2);
+ let form=0;
+ recent.forEach(h=>{form+=h.pos<=3?10:h.pos<=5?6:h.pos<=10?2:-2});
+ const tier=series[ser]?.tier||1;
+ return ((state.ovr||50)*.60+(state.reputation||0)*.30+form+tier*1.5)*ageMarketFactor(state.age);
+}
+function personalExpectation(ser=state.series,team=state.team){
+ const bike=bikeRating(ser,team), field=teamNames(ser).map(n=>bikeRating(ser,n));
+ const best=Math.max(...field), worst=Math.min(...field);
+ const bikeStrength=field.length>1?(bike-worst)/Math.max(1,best-worst):.5;
+ const riderStrength=clamp(((state.ovr||60)-55)/40,0,1);
+ const combined=bikeStrength*.55+riderStrength*.45;
+ let target,label;
+ if(combined>=.82){target=3;label="Title / podium contender"}
+ else if(combined>=.66){target=5;label="Top-five contender"}
+ else if(combined>=.48){target=8;label="Top-eight target"}
+ else if(combined>=.30){target=12;label="Points target"}
+ else {target=15;label="Development season"}
+ return {target,label};
+}
+
 function generatedNationality(){
  const bag=["Spain","Spain","Spain","Italy","Italy","United Kingdom","France","Japan","Australia","Germany","Netherlands","United States","Ireland","South Africa","Argentina","Portugal","Türkiye","Indonesia"];
  return bag[r(0,bag.length-1)];
@@ -205,14 +264,14 @@ function makeGeneratedAI(ser,age){
  const nat=generatedNationality(),teams=teamNames(ser),team=teams[r(0,teams.length-1)];
  const base=aiBaseOvr(ser);
  return {id:"g"+Math.random().toString(36).slice(2),name:generatedName(nat),nation:nat,age:age??aiAgeForSeries(ser,""),series:ser,team,
-  manufacturer:teamMeta?.[ser]?.[team]?.manufacturer||"",ovr:base,ceiling:aiCeiling(base),dev:Math.random()<.2?.65:Math.random()<.85?1:1.15,generated:true,retired:false};
+  manufacturer:teamMeta?.[ser]?.[team]?.manufacturer||"",ovr:base,reputation:Math.max(0,(series[ser]?.tier||1)*5+r(-3,5)),ceiling:aiCeiling(base),dev:Math.random()<.2?.65:Math.random()<.85?1:1.15,generated:true,retired:false};
 }
 function initAIWorld(){
  const riders=[];
  Object.entries(realGridSeeds).forEach(([ser,rows])=>{
   rows.forEach(([name,nation,team,manufacturer])=>{
    const base=aiBaseOvr(ser);
-   riders.push({id:"r"+Math.random().toString(36).slice(2),name,nation,age:aiAgeForSeries(ser,name),series:ser,team,manufacturer,ovr:base,
+   riders.push({id:"r"+Math.random().toString(36).slice(2),name,nation,age:aiAgeForSeries(ser,name),series:ser,team,manufacturer,ovr:base,reputation:seedAIReputation(ser,base,name),
     ceiling:aiCeiling(base),dev:Math.random()<.25?.75:Math.random()<.85?1:1.12,generated:false,retired:false});
   });
  });
@@ -225,20 +284,33 @@ function aiBike(rider){
 function simulateChampionshipStandings(playerPos,playerPts){
  let field=(state.aiRiders||[]).filter(x=>!x.retired&&x.series===state.series);
  if(!field.length)return [];
- field=field.map(x=>({rider:x,score:x.ovr*.72+aiBike(x)*.28+r(-8,8)})).sort((a,b)=>b.score-a.score);
- const entry={player:true,name:state.name,nation:state.nation,team:state.team};
- const ranked=field.map(x=>({player:false,...x.rider}));
- const ix=clamp(playerPos-1,0,ranked.length);
- ranked.splice(ix,0,entry);
- const top=ranked.slice(0,3).map((x,i)=>{
-  const rank=i+1;
-  let points;
-  if(x.player) points=playerPts;
-  else if(rank<playerPos) points=Math.max(playerPts+8,(playerPts+(playerPos-rank)*r(18,42)));
-  else points=Math.max(0,playerPts-(rank-playerPos)*r(12,34));
-  return {pos:rank,name:x.name,team:x.team,nation:x.nation,points,player:x.player};
- });
- return top;
+ const scored=field.map(x=>({rider:x,score:x.ovr*.66+aiBike(x)*.34+r(-7,7)})).sort((a,b)=>b.score-a.score);
+ const total=Math.max(scored.length+1,playerPos);
+ const rank=clamp(playerPos,1,total);
+ // Build a coherent order with the player inserted at the actual finishing position.
+ const ordered=scored.map(x=>({player:false,...x.rider}));
+ ordered.splice(rank-1,0,{player:true,name:state.name,nation:state.nation,team:state.team});
+ // Points are generated monotonically around the player's known total.
+ const pts=[];
+ for(let i=0;i<Math.min(3,ordered.length);i++){
+   const pos=i+1;
+   if(pos===rank)pts[i]=playerPts;
+   else if(pos<rank){
+     const gap=(rank-pos)*r(18,36);
+     pts[i]=playerPts+gap;
+   }else{
+     const gap=(pos-rank)*r(14,30);
+     pts[i]=Math.max(0,playerPts-gap);
+   }
+ }
+ // If player is outside top 3, create a realistic descending podium total above them.
+ if(rank>3){
+   const p3=Math.max(playerPts+r(18,38),Math.round(series[state.series].races*13));
+   pts[2]=p3; pts[1]=p3+r(12,34); pts[0]=pts[1]+r(12,34);
+ }
+ // Hard guarantee: 1st > 2nd > 3rd.
+ for(let i=1;i<pts.length;i++)if(pts[i]>=pts[i-1])pts[i]=Math.max(0,pts[i-1]-r(8,22));
+ return ordered.slice(0,3).map((x,i)=>({pos:i+1,name:x.name,team:x.team,nation:x.nation,points:pts[i],player:x.player}));
 }
 function moveAI(rider,newSeries){
  rider.series=newSeries;
@@ -253,12 +325,13 @@ function advanceAIWorld(){
   x.age++;
   if(x.age<=28 && x.ovr<x.ceiling && Math.random()<.58*x.dev)x.ovr=Math.min(x.ceiling,x.ovr+r(0,2));
   else if(x.age>=34 && Math.random()<.42)x.ovr=Math.max(55,x.ovr-r(0,2));
+  x.reputation=clamp((x.reputation||0)+(Math.random()<.28?1:0),0,100);
   if(x.age>=43 || (x.age>=38&&Math.random()<.20)){x.retired=true;return}
   if(x.series==="Red Bull Rookies"&&x.age>=17&&Math.random()<.45)moveAI(x,x.ovr>=61?"Moto3":"WorldSSP");
   else if(x.series==="Moto3"&&(x.ovr>=76||x.age>=23)&&Math.random()<.28)moveAI(x,Math.random()<.72?"Moto2":"WorldSSP");
-  else if(x.series==="Moto2"&&x.ovr>=87&&x.age<=29&&Math.random()<.13)moveAI(x,"MotoGP");
+  else if(x.series==="Moto2"&&x.ovr>=84&&(x.reputation||0)>=38&&x.age<=29&&Math.random()<.16)moveAI(x,"MotoGP");
   else if(x.series==="Moto2"&&x.age>=27&&Math.random()<.12)moveAI(x,Math.random()<.55?"WorldSSP":"BSB");
-  else if(x.series==="WorldSSP"&&x.ovr>=83&&Math.random()<.18)moveAI(x,"WorldSBK");
+  else if(x.series==="WorldSSP"&&x.ovr>=80&&(x.reputation||0)>=30&&Math.random()<.18)moveAI(x,"WorldSBK");
   else if(x.series==="WorldSSP"&&x.age>=28&&Math.random()<.12)moveAI(x,"BSB");
   else if(x.series==="WorldSBK"&&x.age>=32&&x.ovr<87&&Math.random()<.14)moveAI(x,"BSB");
   else if(x.series==="MotoGP"&&x.age>=32&&x.ovr<88&&Math.random()<.14)moveAI(x,Math.random()<.55?"WorldSBK":"BSB");
@@ -299,7 +372,7 @@ function startCareer(){
  let attrs={pace:r(52,60),racecraft:r(50,59),qualifying:r(49,59),wet:r(45,60),consistency:r(49,60),tyres:r(48,59),fitness:r(53,62),aggression:r(48,60)};
  Object.keys(attrs).forEach(k=>attrs[k]=clamp(attrs[k]+mods[k],35,99));
  state={name,nation:document.getElementById("nation").value,number:+document.getElementById("number").value||27,style,age:14,series:"Red Bull Rookies",
- team:gridConfig[selectedGrid].team,rookieGrid:selectedGrid,rookieDevelopment:0,lastDevelopmentGain:0,developmentProfile:rollDevelopmentProfile(),careerCeiling:rollCareerCeiling(),consecutiveTitles:0,lastTitleSeries:null,attrs,ovr:0,baseOvr:0,injuryPenalty:0,teamRatings:initTeamRatings(),manufacturerRatings:JSON.parse(JSON.stringify(initialManufacturerRatings)),seasonCount:0,aiRiders:[],lastStandings:[],history:[],totals:{starts:0,wins:0,podiums:0,poles:0,titles:0},offerPending:false,retired:false};
+ team:gridConfig[selectedGrid].team,rookieGrid:selectedGrid,rookieDevelopment:0,lastDevelopmentGain:0,developmentProfile:rollDevelopmentProfile(),careerCeiling:rollCareerCeiling(),consecutiveTitles:0,lastTitleSeries:null,attrs,ovr:0,baseOvr:0,injuryPenalty:0,teamRatings:initTeamRatings(),manufacturerRatings:JSON.parse(JSON.stringify(initialManufacturerRatings)),seasonCount:0,reputation:0,aiRiders:[],lastStandings:[],history:[],totals:{starts:0,wins:0,podiums:0,poles:0,titles:0},offerPending:false,retired:false};
  state.aiRiders=initAIWorld(); updateOVR(); document.getElementById("creator").classList.add("hidden");document.getElementById("game").classList.remove("hidden");render();
 }
 function rollCareerCeiling(){
@@ -515,6 +588,7 @@ function simulateSeason(){
  poles=adjustedTallies.poles;
  state.totals.starts+=starts;state.totals.wins+=wins;state.totals.podiums+=pods;state.totals.poles+=poles;
  state.history.push({age:state.age,series:state.series,team:state.team,ovr:state.ovr,starts,wins,pods,poles,pts,pos});
+ updatePlayerReputation(state.series,pos,wins,pods,personalExpectation(state.series,state.team),title);
  state.lastStandings=simulateChampionshipStandings(pos,pts);
  advanceAIWorld();
  growDecline(pos,injury,title,wins,pods,starts);
@@ -722,7 +796,7 @@ function promotionSeries(pos,title){
 }
 function dropChance(pos,title){
  if(title) return 0;
- const exp=teamExpectation(state.series,state.team);
+ const exp=personalExpectation(state.series,state.team);
  const bike=bikeRating();
  // Stronger bikes demand stronger championship results.
  if(pos<=exp.target) return 0;
@@ -877,7 +951,7 @@ function render(){
  document.getElementById("ageChip").textContent=`Age ${state.age}`;
  document.getElementById("ovr").textContent=state.ovr;
  ["starts","wins","pods","titles"].forEach((id,i)=>document.getElementById(id).textContent=[state.totals.starts,state.totals.wins,state.totals.podiums,state.totals.titles][i]);
- const exp=teamExpectation(state.series,state.team), currentBike=bikeRating();
+ const exp=personalExpectation(state.series,state.team), currentBike=bikeRating();
  const rookieLine=state.series==="Red Bull Rookies"?`<br>${gridConfig[state.rookieGrid].label} development philosophy.`:"";
  document.getElementById("seasonPreview").innerHTML=`You are entering age <b>${state.age}</b> in <b>${state.series}</b> with <b>${state.team}</b>.<br>Current ability: <b>${state.ovr} OVR</b> · Bike: <b>${currentBike}</b>.<br>Team expectation: <b>${exp.label}</b> — target <b>${ordinal(exp.target)} or better</b>.${rookieLine}`;
  const standingsBox=document.getElementById("standingsBox");
