@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ride to Glory v0.11</title>
+<title>Ride to Glory v0.12</title>
 <style>
 :root{
   --bg:#0b0e12; --panel:#141922; --panel2:#1b2230; --text:#f6f7fb; --muted:#9ca8ba;
@@ -116,7 +116,7 @@ button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:poin
     </div>
     <div class="card">
       <h2>Current season</h2>
-      <div id="seasonPreview" style="color:var(--muted);line-height:1.7"></div>
+      <div id="seasonPreview" style="color:var(--muted);line-height:1.7"></div><div id="standingsBox" class="sectiongap"></div>
       <div id="offers" class="sectiongap"></div>
     </div>
   </div>
@@ -132,21 +132,13 @@ button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:poin
   <div id="retirement" class="card sectiongap hidden"></div>
 </section>
 
-<div class="footer">Ride to Glory — prototype v0.11</div>
+<div class="footer">Ride to Glory — prototype v0.12</div>
 </div>
 
 <script>
-const series = {
- "Red Bull Rookies": {tier:1, races:14, teams:[{name:"High Grid",bike:78},{name:"Middle Grid",bike:68},{name:"Low Grid",bike:58}]},
- "Moto3": {tier:2, races:20, teams:[{name:"RedFox GP",bike:84},{name:"Leopardia",bike:88},{name:"Asparia",bike:86},{name:"CIP Racing",bike:75},{name:"Tech3 Junior",bike:81}]},
- "WorldSSP": {tier:3, races:24, teams:[{name:"Ten Kate Yamaha",bike:89},{name:"Evan Bros Ducati",bike:91},{name:"MV Corse",bike:79},{name:"Kawasaki Puccetti",bike:83}]},
- "Moto2": {tier:3, races:20, teams:[{name:"Marc VDS",bike:90},{name:"Speed Up",bike:84},{name:"Ajo Racing",bike:92},{name:"Intact GP",bike:87},{name:"American Racing",bike:80}]},
- "BSB": {tier:4, races:27, teams:[{name:"PBM Ducati",bike:93},{name:"OMG Yamaha",bike:88},{name:"Honda Racing UK",bike:86},{name:"FS-3 Kawasaki",bike:82},{name:"BMW Motorrad UK",bike:89}]},
- "WorldSBK": {tier:5, races:36, teams:[{name:"Ducati Factory",bike:96},{name:"Yamaha Factory",bike:90},{name:"BMW Motorrad",bike:94},{name:"Kawasaki Racing",bike:88},{name:"Honda HRC",bike:84}]},
- "MotoGP": {tier:6, races:22, teams:[{name:"Ducati Lenovo",bike:96},{name:"Yamaha Factory",bike:90},{name:"Honda HRC",bike:88},{name:"KTM Factory",bike:92},{name:"Aprilia Racing",bike:93},{name:"Gresini",bike:87},{name:"Pramac",bike:86}]}
-};
-const motoGPFactoryTeams=["Ducati Lenovo","Yamaha Factory","Honda HRC","KTM Factory","Aprilia Racing"];
-const motoGPSatelliteTeams=["Gresini","Pramac"];
+const series = {"Red Bull Rookies":{"tier":1,"races":14,"teams":[{"name":"High Grid","bike":78},{"name":"Middle Grid","bike":68},{"name":"Low Grid","bike":58}]},"Moto3":{"tier":2,"races":20,"teams":[{"name":"SIC58 Squadra Corse","bike":80},{"name":"AEON Credit - MT Helmets - MSI","bike":86},{"name":"GRYD - MLav Racing","bike":86},{"name":"Honda Team Asia","bike":80},{"name":"Rivacold Snipers Team","bike":81},{"name":"CIP Green Power","bike":83},{"name":"CODE Motorsports","bike":87},{"name":"LEVELUP - MTA","bike":88},{"name":"Liqui Moly Dynavolt Intact GP","bike":76},{"name":"Red Bull KTM Tech3","bike":86},{"name":"CFMOTO Aspar Team","bike":77},{"name":"Leopard Racing","bike":79},{"name":"Red Bull KTM Ajo","bike":82}]},"WorldSSP":{"tier":3,"races":24,"teams":[{"name":"ZXMOTO Factory Evan Bros Racing","bike":86},{"name":"Pata Yamaha Ten Kate Racing","bike":83},{"name":"Orelac Racing Verdnatura","bike":86},{"name":"PTR Triumph Factory Racing","bike":79},{"name":"GMT94 Yamaha","bike":86},{"name":"AS Racing Team","bike":78},{"name":"Renzi Corse","bike":89},{"name":"Feel Racing WorldSSP Team","bike":79},{"name":"Kawasaki WorldSSP Team","bike":90},{"name":"WRP Racing","bike":81},{"name":"Ecosantagata Althea Racing Team","bike":85},{"name":"Motozoo by Madforce Dubai","bike":78},{"name":"Honda Racing World Supersport","bike":79},{"name":"QJMOTOR Factory Racing","bike":78},{"name":"D34G WorldSSP Racing Team","bike":83},{"name":"VFT Racing Yamaha","bike":89},{"name":"Cerba Yamaha Racing Team","bike":89},{"name":"Compos Racing Team","bike":81},{"name":"EAB Racing Team","bike":80},{"name":"Flembbo by Racing Development","bike":84},{"name":"Motorsport Kofler","bike":84}]},"Moto2":{"tier":3,"races":20,"teams":[{"name":"ITALJET Gresini Moto2","bike":91},{"name":"QJMOTOR - FRINSA - MSI","bike":82},{"name":"REDS Fantic Racing","bike":90},{"name":"Forward Factory Team","bike":85},{"name":"OnlyFans American Racing Team","bike":83},{"name":"SpeedRS Team","bike":87},{"name":"Italtrans Racing Team","bike":89},{"name":"LIQUI MOLY Dynavolt Intact GP","bike":87},{"name":"BLU CRU Pramac Yamaha Moto2","bike":84},{"name":"ELF Marc VDS Racing Team","bike":87},{"name":"Idemitsu Honda Team Asia","bike":80},{"name":"Momoven Idrofoglia RW Racing Team","bike":88},{"name":"CFMOTO Aspar Team","bike":87},{"name":"Red Bull KTM Ajo","bike":88}]},"BSB":{"tier":4,"races":27,"teams":[{"name":"Nitrous Coin Nitrous Competitions Racing","bike":90},{"name":"SM Racing Honda","bike":86},{"name":"Honda Racing UK","bike":88},{"name":"Cheshire Mouldings Yamaha","bike":87},{"name":"DAO Racing Honda","bike":86},{"name":"MasterMac Honda","bike":86},{"name":"ROKiT BMW Motorrad British Superbike Race team","bike":90},{"name":"MET fonaCAB Racing Ducati","bike":90},{"name":"AJN Steelstock bimota","bike":84},{"name":"Sencat Racing Yamaha","bike":87},{"name":"Whitecliffe CDH Racing Honda","bike":86},{"name":"McAMS Yamaha","bike":89},{"name":"Hager PBM Racing Team","bike":90},{"name":"LEW 8TEN Racing BMW Motorrad","bike":88},{"name":"Bathams AJN Racing","bike":90},{"name":"TAG Racing Honda","bike":86},{"name":"MotoRapido Racing","bike":90}]},"WorldSBK":{"tier":5,"races":36,"teams":[{"name":"Aruba.it Racing - Ducati","bike":94},{"name":"ROKiT BMW Motorrad WorldSBK Team","bike":93},{"name":"Pata Maxus Yamaha","bike":88},{"name":"Barni Spark Racing Team","bike":92},{"name":"bimota by Kawasaki Racing Team","bike":89},{"name":"Honda HRC","bike":85},{"name":"GYTR GRT Yamaha WorldSBK Team","bike":86},{"name":"ELF Marc VDS Racing Team","bike":92},{"name":"Team Goeleven","bike":92},{"name":"MGM Racing Performance","bike":92},{"name":"Kawasaki WorldSBK Team","bike":84},{"name":"Motocorsa Racing","bike":92},{"name":"Motoxracing WorldSBK Team","bike":86},{"name":"Cainam Racing Team","bike":92}]},"MotoGP":{"tier":6,"races":22,"teams":[{"name":"CASTROL Honda LCR","bike":85},{"name":"Prima Pramac Yamaha MotoGP","bike":83},{"name":"Honda HRC Castrol","bike":86},{"name":"Pro Honda LCR","bike":85},{"name":"Red Bull KTM Tech3","bike":90},{"name":"Monster Energy Yamaha MotoGP","bike":84},{"name":"Pertamina Enduro VR46 Racing Team","bike":93},{"name":"SuperFile Trackhouse MotoGP Team","bike":93},{"name":"Red Bull KTM Factory Racing","bike":91},{"name":"BK8 Gresini Racing MotoGP","bike":93},{"name":"Ducati Lenovo Team","bike":94},{"name":"Aprilia Racing","bike":94}]}};
+const motoGPFactoryTeams=["Ducati Lenovo Team","Aprilia Racing","Red Bull KTM Factory Racing","Honda HRC Castrol","Monster Energy Yamaha MotoGP"];
+const motoGPSatelliteTeams=["BK8 Gresini Racing MotoGP","Pertamina Enduro VR46 Racing Team","Prima Pramac Yamaha MotoGP","Red Bull KTM Tech3","SuperFile Trackhouse MotoGP Team","CASTROL Honda LCR","Pro Honda LCR"];
 
 function seasonsInSeries(ser){
  return state.history.filter(h=>h.series===ser).length;
@@ -171,6 +163,115 @@ function hasRecentSuccess(ser){
  return rows.some(h=>h.pos<=6);
 }
 function shuffled(arr){return arr.slice().sort(()=>Math.random()-.5)}
+const realGridSeeds={"MotoGP":[["Johann Zarco","France","CASTROL Honda LCR","Honda"],["Toprak Razgatlioglu","Türkiye","Prima Pramac Yamaha MotoGP","Yamaha"],["Luca Marini","Italy","Honda HRC Castrol","Honda"],["Diogo Moreira","Brazil","Pro Honda LCR","Honda"],["Maverick Viñales","Spain","Red Bull KTM Tech3","KTM"],["Fabio Quartararo","France","Monster Energy Yamaha MotoGP","Yamaha"],["Franco Morbidelli","Italy","Pertamina Enduro VR46 Racing Team","Ducati"],["Enea Bastianini","Italy","Red Bull KTM Tech3","KTM"],["Raul Fernandez","Spain","SuperFile Trackhouse MotoGP Team","Aprilia"],["Brad Binder","South Africa","Red Bull KTM Factory Racing","KTM"],["Joan Mir","Spain","Honda HRC Castrol","Honda"],["Pedro Acosta","Spain","Red Bull KTM Factory Racing","KTM"],["Alex Rins","Spain","Monster Energy Yamaha MotoGP","Yamaha"],["Jack Miller","Australia","Prima Pramac Yamaha MotoGP","Yamaha"],["Fabio Di Giannantonio","Italy","Pertamina Enduro VR46 Racing Team","Ducati"],["Fermin Aldeguer","Spain","BK8 Gresini Racing MotoGP","Ducati"],["Francesco Bagnaia","Italy","Ducati Lenovo Team","Ducati"],["Marco Bezzecchi","Italy","Aprilia Racing","Aprilia"],["Alex Marquez","Spain","BK8 Gresini Racing MotoGP","Ducati"],["Ai Ogura","Japan","SuperFile Trackhouse MotoGP Team","Aprilia"],["Jorge Martin","Spain","Aprilia Racing","Aprilia"],["Marc Marquez","Spain","Ducati Lenovo Team","Ducati"]],"Moto2":[["Sergio Garcia","Spain","ITALJET Gresini Moto2","Kalex"],["Ivan Ortola","Spain","QJMOTOR - FRINSA - MSI","Kalex"],["Barry Baltus","Belgium","REDS Fantic Racing","Kalex"],["Jorge Navarro","Spain","Forward Factory Team","Forward"],["Alex Escrig","Spain","Forward Factory Team","Forward"],["Filip Salac","Czech Republic","OnlyFans American Racing Team","Kalex"],["Celestino Vietti","Italy","SpeedRS Team","Boscoscuro"],["Tony Arbolino","Italy","REDS Fantic Racing","Kalex"],["Joe Roberts","United States","OnlyFans American Racing Team","Kalex"],["Daniel Muñoz","Spain","Italtrans Racing Team","Kalex"],["Manuel Gonzalez","Spain","LIQUI MOLY Dynavolt Intact GP","Kalex"],["Alonso Lopez","Spain","ITALJET Gresini Moto2","Kalex"],["Izan Guevara","Spain","BLU CRU Pramac Yamaha Moto2","Boscoscuro"],["Luca Lunetta","Italy","SpeedRS Team","Boscoscuro"],["Angel Piqueras","Spain","QJMOTOR - FRINSA - MSI","Kalex"],["Aron Canet","Spain","ELF Marc VDS Racing Team","Boscoscuro"],["Deniz Oncu","Türkiye","ELF Marc VDS Racing Team","Boscoscuro"],["Alberto Ferrandez","Spain","BLU CRU Pramac Yamaha Moto2","Boscoscuro"],["Mario Aji","Indonesia","Idemitsu Honda Team Asia","Kalex"],["Ayumu Sasaki","Japan","Momoven Idrofoglia RW Racing Team","Kalex"],["Taiyo Furusato","Japan","Idemitsu Honda Team Asia","Kalex"],["David Alonso","Colombia","CFMOTO Aspar Team","Kalex"],["Senna Agius","Australia","LIQUI MOLY Dynavolt Intact GP","Kalex"],["Zonta van den Goorbergh","Netherlands","Momoven Idrofoglia RW Racing Team","Kalex"],["Collin Veijer","Netherlands","Red Bull KTM Ajo","Kalex"],["Daniel Holgado","Spain","CFMOTO Aspar Team","Kalex"],["Jose Antonio Rueda","Spain","Red Bull KTM Ajo","Kalex"],["Adrian Huertas","Spain","Italtrans Racing Team","Kalex"]],"Moto3":[["Leo Rammerstorfer","Austria","SIC58 Squadra Corse","Honda"],["Ryusei Yamanaka","Japan","AEON Credit - MT Helmets - MSI","KTM"],["Eddie O'Shea","United Kingdom","GRYD - MLav Racing","Honda"],["Veda Pratama","Indonesia","Honda Team Asia","Honda"],["Nicola Carraro","Italy","Rivacold Snipers Team","Honda"],["Adrian Cruces","Spain","CIP Green Power","KTM"],["Hakim Danish","Malaysia","AEON Credit - MT Helmets - MSI","KTM"],["Cormac Buchanan","New Zealand","CODE Motorsports","KTM"],["Matteo Bertelle","Italy","LEVELUP - MTA","KTM"],["Scott Ogden","United Kingdom","CIP Green Power","KTM"],["Ruche Moodley","South Africa","CODE Motorsports","KTM"],["David Almansa","Spain","Liqui Moly Dynavolt Intact GP","KTM"],["Rico Salmela","Finland","Red Bull KTM Tech3","KTM"],["Maximo Quiles","Spain","CFMOTO Aspar Team","KTM"],["Adrian Fernandez","Spain","Leopard Racing","Honda"],["Zen Mitani","Japan","Honda Team Asia","Honda"],["Brian Uriarte","Spain","Red Bull KTM Ajo","KTM"],["Jesus Rios","Spain","Rivacold Snipers Team","Honda"],["David Muñoz","Spain","Liqui Moly Dynavolt Intact GP","KTM"],["Joel Kelso","Australia","GRYD - MLav Racing","Honda"],["Casey O'Gorman","Ireland","SIC58 Squadra Corse","Honda"],["Valentin Perrone","Argentina","Red Bull KTM Tech3","KTM"],["Joel Esteban","Spain","LEVELUP - MTA","KTM"],["Alvaro Carpe","Spain","Red Bull KTM Ajo","KTM"],["Guido Pini","Italy","Leopard Racing","Honda"],["Marco Morelli","Argentina","CFMOTO Aspar Team","KTM"]],"WorldSBK":[["Iker Lecuona","Spain","Aruba.it Racing - Ducati","Ducati"],["Nicolo Bulega","Italy","Aruba.it Racing - Ducati","Ducati"],["Danilo Petrucci","Italy","ROKiT BMW Motorrad WorldSBK Team","BMW"],["Miguel Oliveira","Portugal","ROKiT BMW Motorrad WorldSBK Team","BMW"],["Andrea Locatelli","Italy","Pata Maxus Yamaha","Yamaha"],["Xavi Vierge","Spain","Pata Maxus Yamaha","Yamaha"],["Yari Montella","Italy","Barni Spark Racing Team","Ducati"],["Alvaro Bautista","Spain","Barni Spark Racing Team","Ducati"],["Alex Lowes","United Kingdom","bimota by Kawasaki Racing Team","Bimota"],["Axel Bassani","Italy","bimota by Kawasaki Racing Team","Bimota"],["Somkiat Chantra","Thailand","Honda HRC","Honda"],["Jake Dixon","United Kingdom","Honda HRC","Honda"],["Stefano Manzi","Italy","GYTR GRT Yamaha WorldSBK Team","Yamaha"],["Remy Gardner","Australia","GYTR GRT Yamaha WorldSBK Team","Yamaha"],["Sam Lowes","United Kingdom","ELF Marc VDS Racing Team","Ducati"],["Lorenzo Baldassarri","Italy","Team Goeleven","Ducati"],["Tarran Mackenzie","United Kingdom","MGM Racing Performance","Ducati"],["Garrett Gerloff","United States","Kawasaki WorldSBK Team","Kawasaki"],["Alberto Surra","Italy","Motocorsa Racing","Ducati"],["Mattia Rato","Italy","Motoxracing WorldSBK Team","Yamaha"],["Bahattin Sofuoglu","Türkiye","Motoxracing WorldSBK Team","Yamaha"],["Andrea Iannone","Italy","Cainam Racing Team","Ducati"]],"WorldSSP":[["Valentin Debise","France","ZXMOTO Factory Evan Bros Racing","ZXMOTO"],["Federico Caricasulo","Italy","ZXMOTO Factory Evan Bros Racing","ZXMOTO"],["Yuki Okamoto","Japan","Pata Yamaha Ten Kate Racing","Yamaha"],["Can Oncu","Türkiye","Pata Yamaha Ten Kate Racing","Yamaha"],["Jaume Masia","Spain","Orelac Racing Verdnatura","Ducati"],["Josh Whatley","United Kingdom","Orelac Racing Verdnatura","Ducati"],["Oli Bayliss","Australia","PTR Triumph Factory Racing","Triumph"],["Tom Booth-Amos","United Kingdom","PTR Triumph Factory Racing","Triumph"],["Roberto Garcia","Spain","GMT94 Yamaha","Yamaha"],["Lucas Mahias","France","GMT94 Yamaha","Yamaha"],["Aldi Mahendra","Indonesia","AS Racing Team","Yamaha"],["Albert Arenas","Spain","AS Racing Team","Yamaha"],["Riccardo Rossi","Italy","Renzi Corse","Ducati"],["Philipp Oettl","Germany","Feel Racing WorldSSP Team","Ducati"],["Jeremy Alcoba","Spain","Kawasaki WorldSSP Team","Kawasaki"],["Dominique Aegerter","Switzerland","Kawasaki WorldSSP Team","Kawasaki"],["Matteo Ferrari","Italy","WRP Racing","Ducati"],["Petr Svoboda","Czech Republic","WRP Racing","Ducati"],["Leonardo Taccini","Italy","Ecosantagata Althea Racing Team","Ducati"],["Alessandro Zaccone","Italy","Ecosantagata Althea Racing Team","Ducati"],["Andrea Giombini","Italy","Motozoo by Madforce Dubai","MV Agusta"],["Corentin Perolari","France","Honda Racing World Supersport","Honda"],["Ana Carrasco","Spain","Honda Racing World Supersport","Honda"],["Raffaele De Rosa","Italy","QJMOTOR Factory Racing","QJMOTOR"],["Marcos Ramirez","Spain","QJMOTOR Factory Racing","QJMOTOR"],["Mattia Casadei","Italy","D34G WorldSSP Racing Team","Ducati"],["Filippo Farioli","Italy","VFT Racing Yamaha","Yamaha"],["Xavi Cardelus","Andorra","Cerba Yamaha Racing Team","Yamaha"],["Oliver Konig","Czech Republic","Compos Racing Team","Triumph"],["Ondrej Vostatek","Czech Republic","Compos Racing Team","Triumph"],["Simon Jespersen","Denmark","EAB Racing Team","Ducati"],["Jacopo Cretaro","Italy","Flembbo by Racing Development","MV Agusta"],["Andreas Kofler","Austria","Motorsport Kofler","Yamaha"]],"BSB":[["Kyle Ryde","United Kingdom","Nitrous Coin Nitrous Competitions Racing","Ducati"],["Glenn Irwin","United Kingdom","Nitrous Coin Nitrous Competitions Racing","Ducati"],["Richard Kerr","Ireland","SM Racing Honda","Honda"],["Ryan Vickers","United Kingdom","Honda Racing UK","Honda"],["Rory Skinner","United Kingdom","Cheshire Mouldings Yamaha","Yamaha"],["Lee Jackson","United Kingdom","DAO Racing Honda","Honda"],["Eugene McManus","Ireland","MasterMac Honda","Honda"],["Ilya Mikhalchik","Ukraine","ROKiT BMW Motorrad British Superbike Race team","BMW"],["Andrew Irwin","United Kingdom","MET fonaCAB Racing Ducati","Ducati"],["Joe Talbot","United Kingdom","AJN Steelstock bimota","Bimota"],["Christian Iddon","United Kingdom","Sencat Racing Yamaha","Yamaha"],["Jason O'Halloran","Australia","Honda Racing UK","Honda"],["Luke Hedger","United Kingdom","Whitecliffe CDH Racing Honda","Honda"],["Josh Brookes","Australia","DAO Racing Honda","Honda"],["Bradley Ray","United Kingdom","McAMS Yamaha","Yamaha"],["Max Cook","United Kingdom","AJN Steelstock bimota","Bimota"],["Scott Redding","United Kingdom","Hager PBM Racing Team","Ducati"],["Peter Hickman","United Kingdom","LEW 8TEN Racing BMW Motorrad","BMW"],["Danny Kent","United Kingdom","Cheshire Mouldings Yamaha","Yamaha"],["Rhys Irwin","Ireland","MasterMac Honda","Honda"],["Davey Todd","United Kingdom","LEW 8TEN Racing BMW Motorrad","BMW"],["Storm Stacey","United Kingdom","Bathams AJN Racing","Ducati"],["Charlie Nesbitt","United Kingdom","TAG Racing Honda","Honda"],["Fraser Rogers","United Kingdom","TAG Racing Honda","Honda"],["Leon Haslam","United Kingdom","MotoRapido Racing","Ducati"]]};
+const teamMeta={"MotoGP":{"CASTROL Honda LCR":{"manufacturer":"Honda","factory":false},"Prima Pramac Yamaha MotoGP":{"manufacturer":"Yamaha","factory":false},"Honda HRC Castrol":{"manufacturer":"Honda","factory":true},"Pro Honda LCR":{"manufacturer":"Honda","factory":false},"Red Bull KTM Tech3":{"manufacturer":"KTM","factory":false},"Monster Energy Yamaha MotoGP":{"manufacturer":"Yamaha","factory":true},"Pertamina Enduro VR46 Racing Team":{"manufacturer":"Ducati","factory":false},"SuperFile Trackhouse MotoGP Team":{"manufacturer":"Aprilia","factory":false},"Red Bull KTM Factory Racing":{"manufacturer":"KTM","factory":true},"BK8 Gresini Racing MotoGP":{"manufacturer":"Ducati","factory":false},"Ducati Lenovo Team":{"manufacturer":"Ducati","factory":true},"Aprilia Racing":{"manufacturer":"Aprilia","factory":true}},"Moto2":{"ITALJET Gresini Moto2":{"manufacturer":"Kalex","factory":false},"QJMOTOR - FRINSA - MSI":{"manufacturer":"Kalex","factory":false},"REDS Fantic Racing":{"manufacturer":"Kalex","factory":false},"Forward Factory Team":{"manufacturer":"Forward","factory":false},"OnlyFans American Racing Team":{"manufacturer":"Kalex","factory":false},"SpeedRS Team":{"manufacturer":"Boscoscuro","factory":false},"Italtrans Racing Team":{"manufacturer":"Kalex","factory":false},"LIQUI MOLY Dynavolt Intact GP":{"manufacturer":"Kalex","factory":false},"BLU CRU Pramac Yamaha Moto2":{"manufacturer":"Boscoscuro","factory":false},"ELF Marc VDS Racing Team":{"manufacturer":"Boscoscuro","factory":false},"Idemitsu Honda Team Asia":{"manufacturer":"Kalex","factory":false},"Momoven Idrofoglia RW Racing Team":{"manufacturer":"Kalex","factory":false},"CFMOTO Aspar Team":{"manufacturer":"Kalex","factory":false},"Red Bull KTM Ajo":{"manufacturer":"Kalex","factory":false}},"Moto3":{"SIC58 Squadra Corse":{"manufacturer":"Honda","factory":false},"AEON Credit - MT Helmets - MSI":{"manufacturer":"KTM","factory":false},"GRYD - MLav Racing":{"manufacturer":"Honda","factory":false},"Honda Team Asia":{"manufacturer":"Honda","factory":false},"Rivacold Snipers Team":{"manufacturer":"Honda","factory":false},"CIP Green Power":{"manufacturer":"KTM","factory":false},"CODE Motorsports":{"manufacturer":"KTM","factory":false},"LEVELUP - MTA":{"manufacturer":"KTM","factory":false},"Liqui Moly Dynavolt Intact GP":{"manufacturer":"KTM","factory":false},"Red Bull KTM Tech3":{"manufacturer":"KTM","factory":false},"CFMOTO Aspar Team":{"manufacturer":"KTM","factory":false},"Leopard Racing":{"manufacturer":"Honda","factory":false},"Red Bull KTM Ajo":{"manufacturer":"KTM","factory":false}},"WorldSBK":{"Aruba.it Racing - Ducati":{"manufacturer":"Ducati","factory":true},"ROKiT BMW Motorrad WorldSBK Team":{"manufacturer":"BMW","factory":true},"Pata Maxus Yamaha":{"manufacturer":"Yamaha","factory":true},"Barni Spark Racing Team":{"manufacturer":"Ducati","factory":false},"bimota by Kawasaki Racing Team":{"manufacturer":"Bimota","factory":true},"Honda HRC":{"manufacturer":"Honda","factory":true},"GYTR GRT Yamaha WorldSBK Team":{"manufacturer":"Yamaha","factory":false},"ELF Marc VDS Racing Team":{"manufacturer":"Ducati","factory":false},"Team Goeleven":{"manufacturer":"Ducati","factory":false},"MGM Racing Performance":{"manufacturer":"Ducati","factory":false},"Kawasaki WorldSBK Team":{"manufacturer":"Kawasaki","factory":true},"Motocorsa Racing":{"manufacturer":"Ducati","factory":false},"Motoxracing WorldSBK Team":{"manufacturer":"Yamaha","factory":false},"Cainam Racing Team":{"manufacturer":"Ducati","factory":false}},"WorldSSP":{"ZXMOTO Factory Evan Bros Racing":{"manufacturer":"ZXMOTO","factory":false},"Pata Yamaha Ten Kate Racing":{"manufacturer":"Yamaha","factory":false},"Orelac Racing Verdnatura":{"manufacturer":"Ducati","factory":false},"PTR Triumph Factory Racing":{"manufacturer":"Triumph","factory":false},"GMT94 Yamaha":{"manufacturer":"Yamaha","factory":false},"AS Racing Team":{"manufacturer":"Yamaha","factory":false},"Renzi Corse":{"manufacturer":"Ducati","factory":false},"Feel Racing WorldSSP Team":{"manufacturer":"Ducati","factory":false},"Kawasaki WorldSSP Team":{"manufacturer":"Kawasaki","factory":false},"WRP Racing":{"manufacturer":"Ducati","factory":false},"Ecosantagata Althea Racing Team":{"manufacturer":"Ducati","factory":false},"Motozoo by Madforce Dubai":{"manufacturer":"MV Agusta","factory":false},"Honda Racing World Supersport":{"manufacturer":"Honda","factory":false},"QJMOTOR Factory Racing":{"manufacturer":"QJMOTOR","factory":false},"D34G WorldSSP Racing Team":{"manufacturer":"Ducati","factory":false},"VFT Racing Yamaha":{"manufacturer":"Yamaha","factory":false},"Cerba Yamaha Racing Team":{"manufacturer":"Yamaha","factory":false},"Compos Racing Team":{"manufacturer":"Triumph","factory":false},"EAB Racing Team":{"manufacturer":"Ducati","factory":false},"Flembbo by Racing Development":{"manufacturer":"MV Agusta","factory":false},"Motorsport Kofler":{"manufacturer":"Yamaha","factory":false}},"BSB":{"Nitrous Coin Nitrous Competitions Racing":{"manufacturer":"Ducati","factory":false},"SM Racing Honda":{"manufacturer":"Honda","factory":false},"Honda Racing UK":{"manufacturer":"Honda","factory":true},"Cheshire Mouldings Yamaha":{"manufacturer":"Yamaha","factory":false},"DAO Racing Honda":{"manufacturer":"Honda","factory":false},"MasterMac Honda":{"manufacturer":"Honda","factory":false},"ROKiT BMW Motorrad British Superbike Race team":{"manufacturer":"BMW","factory":true},"MET fonaCAB Racing Ducati":{"manufacturer":"Ducati","factory":false},"AJN Steelstock bimota":{"manufacturer":"Bimota","factory":false},"Sencat Racing Yamaha":{"manufacturer":"Yamaha","factory":false},"Whitecliffe CDH Racing Honda":{"manufacturer":"Honda","factory":false},"McAMS Yamaha":{"manufacturer":"Yamaha","factory":true},"Hager PBM Racing Team":{"manufacturer":"Ducati","factory":false},"LEW 8TEN Racing BMW Motorrad":{"manufacturer":"BMW","factory":false},"Bathams AJN Racing":{"manufacturer":"Ducati","factory":false},"TAG Racing Honda":{"manufacturer":"Honda","factory":false},"MotoRapido Racing":{"manufacturer":"Ducati","factory":false}}};
+const initialManufacturerRatings={"MotoGP":{"Ducati":94,"Aprilia":94,"KTM":91,"Honda":86,"Yamaha":84},"WorldSBK":{"Ducati":94,"BMW":93,"Yamaha":88,"Bimota":89,"Honda":85,"Kawasaki":84},"BSB":{"Ducati":92,"BMW":90,"Yamaha":89,"Honda":88,"Bimota":86}};
+const generatedNamePools={"Spain":{"first":["Alejandro","Javier","Mateo","Hugo","Daniel","Adrian","Izan","Carlos"],"last":["Garcia","Martinez","Navarro","Ortega","Serrano","Vega","Ruiz","Castillo"]},"Italy":{"first":["Luca","Matteo","Marco","Andrea","Nicolo","Federico","Alessio","Davide"],"last":["Rossi","Bianchi","Romano","Ferrari","Conti","Moretti","Ricci","Lombardi"]},"United Kingdom":{"first":["Jack","Callum","Harry","Oliver","Charlie","Ryan","Jake","Ben"],"last":["Foster","Harris","Turner","Wilson","Clarke","Bennett","Taylor","Morgan"]},"France":{"first":["Louis","Theo","Hugo","Jules","Lucas","Mathis"],"last":["Martin","Dubois","Bernard","Moreau","Laurent","Roux"]},"Japan":{"first":["Haruto","Ren","Yuto","Kaito","Sota","Riku"],"last":["Sato","Suzuki","Takahashi","Nakamura","Kobayashi","Ito"]},"Australia":{"first":["Jack","Liam","Cooper","Noah","Ethan","Riley"],"last":["Miller","Wilson","Taylor","Brown","Martin","Walker"]},"United States":{"first":["Logan","Mason","Ethan","Cole","Tyler","Dylan"],"last":["Johnson","Miller","Davis","Wilson","Anderson","Clark"]},"Ireland":{"first":["Sean","Cian","Ronan","Darragh","Conor","Oisin"],"last":["Murphy","Kelly","Byrne","Ryan","Walsh","Doyle"]},"Netherlands":{"first":["Daan","Sem","Lars","Bram","Finn","Milan"],"last":["de Vries","Jansen","Bakker","Visser","Smit","Meijer"]},"Germany":{"first":["Leon","Lukas","Finn","Jonas","Max","Felix"],"last":["Müller","Schmidt","Fischer","Weber","Wagner","Becker"]},"South Africa":{"first":["Liam","Luke","Ethan","Daniel","Aiden","Jayden"],"last":["Naidoo","Botha","van der Merwe","Meyer","Smith","Pillay"]},"Argentina":{"first":["Mateo","Tomas","Santiago","Franco","Nicolas","Juan"],"last":["Gonzalez","Fernandez","Romero","Diaz","Alvarez","Rojas"]},"Portugal":{"first":["Joao","Tiago","Miguel","Diogo","Tomas","Afonso"],"last":["Silva","Santos","Ferreira","Costa","Oliveira","Pereira"]},"Türkiye":{"first":["Emir","Kerem","Arda","Mert","Can","Bora"],"last":["Yilmaz","Kaya","Demir","Aydin","Celik","Sahin"]},"Indonesia":{"first":["Rizky","Dimas","Fajar","Aldi","Raka","Bagas"],"last":["Pratama","Saputra","Wijaya","Nugroho","Santoso","Putra"]},"Other":{"first":["Alex","Sam","Leo","Max","Nico","Kai"],"last":["Martin","Rossi","Silva","Lee","Costa","Meyer"]}};
+
+function aiAgeForSeries(ser,name){
+ const veteranAges={"Marc Marquez":33,"Francesco Bagnaia":29,"Jorge Martin":28,"Fabio Quartararo":27,"Johann Zarco":36,"Jack Miller":31,
+ "Toprak Razgatlioglu":29,"Danilo Petrucci":35,"Alvaro Bautista":41,"Andrea Iannone":37,"Alex Lowes":36,"Sam Lowes":35,
+ "Scott Redding":33,"Leon Haslam":43,"Josh Brookes":43,"Peter Hickman":39,"Jason O'Halloran":38,"Christian Iddon":41,"Glenn Irwin":36};
+ if(veteranAges[name]) return veteranAges[name];
+ if(ser==="MotoGP")return r(22,32);
+ if(ser==="WorldSBK")return r(23,35);
+ if(ser==="BSB")return r(21,36);
+ if(ser==="WorldSSP")return r(18,30);
+ if(ser==="Moto2")return r(18,27);
+ if(ser==="Moto3")return r(17,22);
+ return r(14,17);
+}
+function aiBaseOvr(ser){
+ const ranges={"Red Bull Rookies":[50,64],"Moto3":[60,76],"WorldSSP":[66,82],"Moto2":[68,84],"BSB":[76,89],"WorldSBK":[82,93],"MotoGP":[85,94]};
+ const q=ranges[ser]||[60,80];return r(q[0],q[1]);
+}
+function generatedNationality(){
+ const bag=["Spain","Spain","Spain","Italy","Italy","United Kingdom","France","Japan","Australia","Germany","Netherlands","United States","Ireland","South Africa","Argentina","Portugal","Türkiye","Indonesia"];
+ return bag[r(0,bag.length-1)];
+}
+function generatedName(nat){
+ const p=generatedNamePools[nat]||generatedNamePools.Other;
+ return p.first[r(0,p.first.length-1)]+" "+p.last[r(0,p.last.length-1)];
+}
+function aiCeiling(base){
+ const x=Math.random();let c;
+ if(x<.55)c=r(Math.max(base,82),89);
+ else if(x<.85)c=r(Math.max(base,88),92);
+ else if(x<.97)c=r(Math.max(base,91),94);
+ else c=95;
+ return clamp(c,base,95);
+}
+function makeGeneratedAI(ser,age){
+ const nat=generatedNationality(),teams=teamNames(ser),team=teams[r(0,teams.length-1)];
+ const base=aiBaseOvr(ser);
+ return {id:"g"+Math.random().toString(36).slice(2),name:generatedName(nat),nation:nat,age:age??aiAgeForSeries(ser,""),series:ser,team,
+  manufacturer:teamMeta?.[ser]?.[team]?.manufacturer||"",ovr:base,ceiling:aiCeiling(base),dev:Math.random()<.2?.65:Math.random()<.85?1:1.15,generated:true,retired:false};
+}
+function initAIWorld(){
+ const riders=[];
+ Object.entries(realGridSeeds).forEach(([ser,rows])=>{
+  rows.forEach(([name,nation,team,manufacturer])=>{
+   const base=aiBaseOvr(ser);
+   riders.push({id:"r"+Math.random().toString(36).slice(2),name,nation,age:aiAgeForSeries(ser,name),series:ser,team,manufacturer,ovr:base,
+    ceiling:aiCeiling(base),dev:Math.random()<.25?.75:Math.random()<.85?1:1.12,generated:false,retired:false});
+  });
+ });
+ for(let i=0;i<16;i++)riders.push(makeGeneratedAI("Red Bull Rookies",r(14,17)));
+ return riders;
+}
+function aiBike(rider){
+ return bikeRating(rider.series,rider.team);
+}
+function simulateChampionshipStandings(playerPos,playerPts){
+ let field=(state.aiRiders||[]).filter(x=>!x.retired&&x.series===state.series);
+ if(!field.length)return [];
+ field=field.map(x=>({rider:x,score:x.ovr*.72+aiBike(x)*.28+r(-8,8)})).sort((a,b)=>b.score-a.score);
+ const entry={player:true,name:state.name,nation:state.nation,team:state.team};
+ const ranked=field.map(x=>({player:false,...x.rider}));
+ const ix=clamp(playerPos-1,0,ranked.length);
+ ranked.splice(ix,0,entry);
+ const top=ranked.slice(0,3).map((x,i)=>{
+  const rank=i+1;
+  let points;
+  if(x.player) points=playerPts;
+  else if(rank<playerPos) points=Math.max(playerPts+8,(playerPts+(playerPos-rank)*r(18,42)));
+  else points=Math.max(0,playerPts-(rank-playerPos)*r(12,34));
+  return {pos:rank,name:x.name,team:x.team,nation:x.nation,points,player:x.player};
+ });
+ return top;
+}
+function moveAI(rider,newSeries){
+ rider.series=newSeries;
+ const teams=teamNames(newSeries);
+ rider.team=teams[r(0,teams.length-1)];
+ rider.manufacturer=teamMeta?.[newSeries]?.[rider.team]?.manufacturer||"";
+}
+function advanceAIWorld(){
+ if(!state.aiRiders)return;
+ state.aiRiders.forEach(x=>{
+  if(x.retired)return;
+  x.age++;
+  if(x.age<=28 && x.ovr<x.ceiling && Math.random()<.58*x.dev)x.ovr=Math.min(x.ceiling,x.ovr+r(0,2));
+  else if(x.age>=34 && Math.random()<.42)x.ovr=Math.max(55,x.ovr-r(0,2));
+  if(x.age>=43 || (x.age>=38&&Math.random()<.20)){x.retired=true;return}
+  if(x.series==="Red Bull Rookies"&&x.age>=17&&Math.random()<.45)moveAI(x,x.ovr>=61?"Moto3":"WorldSSP");
+  else if(x.series==="Moto3"&&(x.ovr>=76||x.age>=23)&&Math.random()<.28)moveAI(x,Math.random()<.72?"Moto2":"WorldSSP");
+  else if(x.series==="Moto2"&&x.ovr>=87&&x.age<=29&&Math.random()<.13)moveAI(x,"MotoGP");
+  else if(x.series==="Moto2"&&x.age>=27&&Math.random()<.12)moveAI(x,Math.random()<.55?"WorldSSP":"BSB");
+  else if(x.series==="WorldSSP"&&x.ovr>=83&&Math.random()<.18)moveAI(x,"WorldSBK");
+  else if(x.series==="WorldSSP"&&x.age>=28&&Math.random()<.12)moveAI(x,"BSB");
+  else if(x.series==="WorldSBK"&&x.age>=32&&x.ovr<87&&Math.random()<.14)moveAI(x,"BSB");
+  else if(x.series==="MotoGP"&&x.age>=32&&x.ovr<88&&Math.random()<.14)moveAI(x,Math.random()<.55?"WorldSBK":"BSB");
+ });
+ const targets={"Red Bull Rookies":16,"Moto3":24,"Moto2":26,"WorldSSP":28,"BSB":24,"WorldSBK":22,"MotoGP":22};
+ Object.entries(targets).forEach(([ser,n])=>{
+  let active=state.aiRiders.filter(x=>!x.retired&&x.series===ser).length;
+  while(active<n){
+   state.aiRiders.push(makeGeneratedAI(ser,ser==="Red Bull Rookies"?r(14,16):undefined));active++;
+  }
+ });
+}
+
 let state=null, selectedGrid="high";
 const gridConfig={
  high:{team:"High Grid",label:"High grid",help:"Fastest rookie bike. Big results earn bonus development; underperforming slows your growth."},
@@ -198,8 +299,8 @@ function startCareer(){
  let attrs={pace:r(52,60),racecraft:r(50,59),qualifying:r(49,59),wet:r(45,60),consistency:r(49,60),tyres:r(48,59),fitness:r(53,62),aggression:r(48,60)};
  Object.keys(attrs).forEach(k=>attrs[k]=clamp(attrs[k]+mods[k],35,99));
  state={name,nation:document.getElementById("nation").value,number:+document.getElementById("number").value||27,style,age:14,series:"Red Bull Rookies",
- team:gridConfig[selectedGrid].team,rookieGrid:selectedGrid,rookieDevelopment:0,lastDevelopmentGain:0,developmentProfile:rollDevelopmentProfile(),careerCeiling:rollCareerCeiling(),consecutiveTitles:0,lastTitleSeries:null,attrs,ovr:0,baseOvr:0,injuryPenalty:0,teamRatings:initTeamRatings(),history:[],totals:{starts:0,wins:0,podiums:0,poles:0,titles:0},offerPending:false,retired:false};
- updateOVR(); document.getElementById("creator").classList.add("hidden");document.getElementById("game").classList.remove("hidden");render();
+ team:gridConfig[selectedGrid].team,rookieGrid:selectedGrid,rookieDevelopment:0,lastDevelopmentGain:0,developmentProfile:rollDevelopmentProfile(),careerCeiling:rollCareerCeiling(),consecutiveTitles:0,lastTitleSeries:null,attrs,ovr:0,baseOvr:0,injuryPenalty:0,teamRatings:initTeamRatings(),manufacturerRatings:JSON.parse(JSON.stringify(initialManufacturerRatings)),seasonCount:0,aiRiders:[],lastStandings:[],history:[],totals:{starts:0,wins:0,podiums:0,poles:0,titles:0},offerPending:false,retired:false};
+ state.aiRiders=initAIWorld(); updateOVR(); document.getElementById("creator").classList.add("hidden");document.getElementById("game").classList.remove("hidden");render();
 }
 function rollCareerCeiling(){
  const x=Math.random();
@@ -221,12 +322,10 @@ function rollDevelopmentProfile(){
  return {name:"prodigy",mult:1.30};
 }
 function bikeCeiling(ser,team){
- if(ser==="MotoGP"){
-   if(["Ducati Lenovo","Yamaha Factory","Honda HRC","KTM Factory","Aprilia Racing"].includes(team)) return 98;
-   return 90; // satellite/independent teams can be excellent, but never become a 99-rated superteam
- }
- if(ser==="WorldSBK") return ["Ducati Factory","Yamaha Factory","BMW Motorrad","Kawasaki Racing","Honda HRC"].includes(team)?97:92;
- return 96;
+ if(ser==="MotoGP")return 97;
+ if(ser==="WorldSBK")return 96;
+ if(ser==="BSB")return 95;
+ return 94;
 }
 function initTeamRatings(){
  const out={};
@@ -235,26 +334,45 @@ function initTeamRatings(){
 }
 function teamNames(s){return series[s].teams.map(t=>t.name)}
 function randomTeam(s){const t=teamNames(s);return t[r(0,t.length-1)]}
-function bikeRating(ser=state.series,team=state.team){return state.teamRatings?.[ser]?.[team] ?? series[ser].teams.find(t=>t.name===team)?.bike ?? 70}
-function teamExpectation(ser,team){
- const teams=teamNames(ser).map(n=>({name:n,bike:bikeRating(ser,n)})).sort((a,b)=>b.bike-a.bike);
- const rank=teams.findIndex(t=>t.name===team)+1;
- const n=teams.length;
- if(rank===1) return {target:3,label:"Title contender"};
- if(rank<=Math.ceil(n*.4)) return {target:5,label:"Podium contender"};
- if(rank<=Math.ceil(n*.7)) return {target:8,label:"Top-eight target"};
- return {target:12,label:"Points / development"};
+function bikeRating(ser=state.series,team=state.team){
+ const meta=teamMeta?.[ser]?.[team];
+ if(meta && state.manufacturerRatings?.[ser]?.[meta.manufacturer]!=null){
+  const base=state.manufacturerRatings[ser][meta.manufacturer];
+  if(meta.factory)return base;
+  // Customer/satellite machinery follows the manufacturer closely, but stays below its factory reference.
+  const gap=ser==="MotoGP"?2:ser==="WorldSBK"?3:2;
+  return clamp(base-gap,70,bikeCeiling(ser,team));
+ }
+ return state.teamRatings?.[ser]?.[team] ?? series[ser].teams.find(t=>t.name===team)?.bike ?? 70;
 }
 function fluctuateBikes(){
+ state.seasonCount=(state.seasonCount||0)+1;
+
+ // MotoGP / WorldSBK / BSB move in manufacturer eras. Every few years the pecking order can genuinely change.
+ ["MotoGP","WorldSBK","BSB"].forEach(ser=>{
+  const ratings=state.manufacturerRatings?.[ser];
+  if(!ratings)return;
+  const eraShift=state.seasonCount%3===0;
+  Object.keys(ratings).forEach(m=>{
+   const annual=r(-1,1);
+   const era=eraShift?r(-5,5):0;
+   ratings[m]=clamp(ratings[m]+annual+era,82,ser==="MotoGP"?97:96);
+  });
+  if(eraShift){
+   const makers=Object.keys(ratings);
+   const riser=makers[r(0,makers.length-1)],faller=makers[r(0,makers.length-1)];
+   ratings[riser]=clamp(ratings[riser]+r(2,4),82,ser==="MotoGP"?97:96);
+   if(faller!==riser)ratings[faller]=clamp(ratings[faller]-r(2,4),82,ser==="MotoGP"?97:96);
+  }
+ });
+
+ // Lower categories still evolve team-by-team.
  Object.entries(state.teamRatings).forEach(([ser,teams])=>{
-   Object.keys(teams).forEach(team=>{
-     const tier=series[ser].tier;
-     // Development is evolutionary, not an endless march to 99. Top-class satellite bikes have hard ceilings.
-     const swing=tier<=2?r(-2,2):r(-1,1);
-     const base=series[ser].teams.find(t=>t.name===team)?.bike ?? teams[team];
-     const floor=Math.max(48,base-7);
-     teams[team]=clamp(teams[team]+swing,floor,bikeCeiling(ser,team));
-   });
+  if(["MotoGP","WorldSBK","BSB"].includes(ser))return;
+  Object.keys(teams).forEach(team=>{
+   const base=series[ser].teams.find(t=>t.name===team)?.bike ?? teams[team];
+   teams[team]=clamp(teams[team]+r(-2,2),Math.max(55,base-8),bikeCeiling(ser,team));
+  });
  });
 }
 function updateOVR(){
@@ -393,11 +511,9 @@ function simulateSeason(){
  if(latestRow && latestRow.age===state.age && latestRow.series===state.series){
    latestRow.wins=wins; latestRow.podiums=pods; latestRow.poles=poles;
  }
+ state.lastStandings=simulateChampionshipStandings(pos,pts);
+ advanceAIWorld();
  growDecline(pos,injury,title,wins,pods,starts);
- if(state.series==="Red Bull Rookies"){
-   const devText=`Development +${state.lastDevelopmentGain} (${state.rookieDevelopment} total).`;
-   event=event?`${event}<br><br><b>${devText}</b>`:devText;
- }
  state.age++;
  fluctuateBikes();
  if(!event && Math.random()<.14) event=randomEvent();
@@ -641,7 +757,7 @@ function generateOffers(pos,title){
        nextTeams.slice(0,2).forEach(team=>state.offers.push(makeOffer(target,team,false)));
        const rookieTeam=shuffled(["High Grid","Middle Grid","Low Grid"])[0];
        state.offers.push(makeOffer("Red Bull Rookies",rookieTeam,rookieTeam===oldTeam));
-       state.contractMessage+=` Red Bull Rookies will also keep a 55+ OVR rider for another development year.`;
+       state.contractMessage+=` Red Bull Rookies will also keep a 55+ OVR rider for another year.`;
      }else{
        nextTeams.slice(0,3).forEach(team=>state.offers.push(makeOffer(target,team,false)));
      }
@@ -760,6 +876,11 @@ function render(){
  const exp=teamExpectation(state.series,state.team), currentBike=bikeRating();
  const rookieLine=state.series==="Red Bull Rookies"?`<br>Rookie development: <b>${state.rookieDevelopment||0} pts</b> · ${gridConfig[state.rookieGrid].label} philosophy.`:"";
  document.getElementById("seasonPreview").innerHTML=`You are entering age <b>${state.age}</b> in <b>${state.series}</b> with <b>${state.team}</b>.<br>Current ability: <b>${state.ovr} OVR</b> · Bike: <b>${currentBike}</b>.<br>Team expectation: <b>${exp.label}</b> — target <b>${ordinal(exp.target)} or better</b>.${rookieLine}`;
+ const standingsBox=document.getElementById("standingsBox");
+ if(state.lastStandings&&state.lastStandings.length){
+   standingsBox.innerHTML=`<h3 style="margin:0 0 8px">Championship top 3</h3>`+state.lastStandings.map(s=>`<div style="display:grid;grid-template-columns:28px 1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid #26303e"><b>${s.pos}</b><span>${s.player?"<b>YOU — "+s.name+"</b>":s.name}<small style="display:block;color:var(--muted)">${s.team}</small></span><b>${s.points} pts</b></div>`).join("");
+ }else standingsBox.innerHTML="";
+
  document.getElementById("historyBody").innerHTML=state.history.slice().reverse().map(h=>`<tr><td>${h.age}</td><td>${h.series}</td><td>${h.team}</td><td>${h.ovr}</td><td>${h.starts}</td><td>${h.wins}</td><td>${h.pods}</td><td>${h.poles}</td><td>${h.pts}</td><td>${h.pos===1?"🏆 1st":ordinal(h.pos)}</td></tr>`).join("");
  let offers=document.getElementById("offers");
  if(state.offerPending){
