@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ride to Glory v0.12</title>
+<title>Ride to Glory v0.12.1</title>
 <style>
 :root{
   --bg:#0b0e12; --panel:#141922; --panel2:#1b2230; --text:#f6f7fb; --muted:#9ca8ba;
@@ -132,7 +132,7 @@ button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:poin
   <div id="retirement" class="card sectiongap hidden"></div>
 </section>
 
-<div class="footer">Ride to Glory — prototype v0.12</div>
+<div class="footer">Ride to Glory — prototype v0.12.1</div>
 </div>
 
 <script>
@@ -345,6 +345,15 @@ function bikeRating(ser=state.series,team=state.team){
  }
  return state.teamRatings?.[ser]?.[team] ?? series[ser].teams.find(t=>t.name===team)?.bike ?? 70;
 }
+function teamExpectation(ser,team){
+ const teams=teamNames(ser).map(n=>({name:n,bike:bikeRating(ser,n)})).sort((a,b)=>b.bike-a.bike);
+ const rank=teams.findIndex(t=>t.name===team)+1;
+ const n=teams.length;
+ if(rank===1) return {target:3,label:"Title contender"};
+ if(rank<=Math.ceil(n*.4)) return {target:5,label:"Podium contender"};
+ if(rank<=Math.ceil(n*.7)) return {target:8,label:"Top-eight target"};
+ return {target:12,label:"Points / development"};
+}
 function fluctuateBikes(){
  state.seasonCount=(state.seasonCount||0)+1;
 
@@ -500,17 +509,12 @@ function simulateSeason(){
  }else if(state.lastTitleSeries===state.series){
    state.consecutiveTitles=0;
  }
- state.totals.starts+=starts;state.totals.wins+=wins;state.totals.podiums+=pods;state.totals.poles+=poles;
- state.history.push({age:state.age,series:state.series,team:state.team,ovr:state.ovr,starts,wins,pods,poles,pts,pos});
  const adjustedTallies=realisticSeasonTallies(pos,wins,pods,poles,starts);
  wins=adjustedTallies.wins;
  pods=adjustedTallies.pods;
  poles=adjustedTallies.poles;
- // If this season row was already created, overwrite its headline tallies with the normalized values.
- const latestRow=state.history[state.history.length-1];
- if(latestRow && latestRow.age===state.age && latestRow.series===state.series){
-   latestRow.wins=wins; latestRow.podiums=pods; latestRow.poles=poles;
- }
+ state.totals.starts+=starts;state.totals.wins+=wins;state.totals.podiums+=pods;state.totals.poles+=poles;
+ state.history.push({age:state.age,series:state.series,team:state.team,ovr:state.ovr,starts,wins,pods,poles,pts,pos});
  state.lastStandings=simulateChampionshipStandings(pos,pts);
  advanceAIWorld();
  growDecline(pos,injury,title,wins,pods,starts);
@@ -634,8 +638,8 @@ function realisticSeasonTallies(pos,wins,pods,poles,starts){
  // Historic domination is possible but deliberately rare.
  let maxWins=winRange[1];
  if(pos===1 && Math.random()<.035) maxWins=Math.min(starts,maxWins+3);
- const targetWins=clamp(wins,winRange[0],maxWins);
- const targetPods=clamp(pods,Math.max(targetWins,podRange[0]),Math.min(starts,podRange[1]));
+ const targetWins=clamp(wins,0,maxWins);
+ const targetPods=clamp(pods,targetWins,Math.min(starts,podRange[1]));
  const targetPoles=Math.min(poles,Math.max(targetWins+4,Math.ceil(starts*.55)));
  return {wins:targetWins,pods:targetPods,poles:targetPoles};
 }
@@ -874,7 +878,7 @@ function render(){
  document.getElementById("ovr").textContent=state.ovr;
  ["starts","wins","pods","titles"].forEach((id,i)=>document.getElementById(id).textContent=[state.totals.starts,state.totals.wins,state.totals.podiums,state.totals.titles][i]);
  const exp=teamExpectation(state.series,state.team), currentBike=bikeRating();
- const rookieLine=state.series==="Red Bull Rookies"?`<br>Rookie development: <b>${state.rookieDevelopment||0} pts</b> · ${gridConfig[state.rookieGrid].label} philosophy.`:"";
+ const rookieLine=state.series==="Red Bull Rookies"?`<br>${gridConfig[state.rookieGrid].label} development philosophy.`:"";
  document.getElementById("seasonPreview").innerHTML=`You are entering age <b>${state.age}</b> in <b>${state.series}</b> with <b>${state.team}</b>.<br>Current ability: <b>${state.ovr} OVR</b> · Bike: <b>${currentBike}</b>.<br>Team expectation: <b>${exp.label}</b> — target <b>${ordinal(exp.target)} or better</b>.${rookieLine}`;
  const standingsBox=document.getElementById("standingsBox");
  if(state.lastStandings&&state.lastStandings.length){
