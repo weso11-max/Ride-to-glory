@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ride to Glory v0.9</title>
+<title>Ride to Glory v0.10</title>
 <style>
 :root{
   --bg:#0b0e12; --panel:#141922; --panel2:#1b2230; --text:#f6f7fb; --muted:#9ca8ba;
@@ -132,7 +132,7 @@ button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:poin
   <div id="retirement" class="card sectiongap hidden"></div>
 </section>
 
-<div class="footer">Ride to Glory — prototype v0.9</div>
+<div class="footer">Ride to Glory — prototype v0.10</div>
 </div>
 
 <script>
@@ -422,6 +422,8 @@ function growDecline(pos,injury,title,wins=0,pods=0,starts=1){
  // Hidden potential controls how much of that opportunity becomes actual ability.
  resultGrowth=Math.round(resultGrowth*profile.mult);
  let growth=Math.round(baseGrowth*profile.mult)+resultGrowth;
+ // From age 36 onward, riders can hold or decline but never improve.
+ if(state.age>=36 && growth>0) growth=0;
 
  // Some seasons simply do not click, even for talented riders.
  if(seasonDevRoll<.10) growth=Math.min(growth,0);
@@ -488,6 +490,20 @@ function promotionSeries(pos,title){
  // Moto3 can still promote a genuinely strong non-champion.
  if(cur==="Moto3" && !title && (pos<=4 || o>=80)) pool.push("Moto2");
 
+ // After four Moto3 seasons, promising riders can redirect into WorldSSP or BSB rather than getting stuck.
+ if(cur==="Moto3" && !title && seasonsInSeries("Moto3")>=4){
+   const recent=recentSeriesResults("Moto3",4);
+   const bestPos=recent.length?Math.min(...recent.map(h=>h.pos)):99;
+   const totalWins=recent.reduce((a,h)=>a+(h.wins||0),0);
+   const totalPods=recent.reduce((a,h)=>a+(h.podiums||0),0);
+   const promise=(o>=68 || bestPos<=10 || totalWins>=1 || totalPods>=3);
+
+   if(promise){
+     pool.push("WorldSSP");
+     if(o>=74 || bestPos<=6 || totalPods>=6) pool.push("BSB");
+   }
+ }
+
  // MotoGP interest without a Moto2 title requires sustained evidence: at least 3 top-five seasons in the last 4.
  if(cur==="Moto2" && !title){
    const recent=recentSeriesResults("Moto2",4);
@@ -552,10 +568,10 @@ function generateOffers(pos,title){
    const target=dev>=5?"Moto3":dev>=3?"WorldSSP":"Red Bull Rookies";
 
    if(target==="Red Bull Rookies"){
-     state.contractMessage=`Development score ${dev}: the next-class teams are not convinced yet. Red Bull Rookies offers you another season.`;
+     state.contractMessage=`The next-class teams are not convinced yet. Red Bull Rookies offers you another season.`;
      ["High Grid","Middle Grid","Low Grid"].forEach(team=>state.offers.push(makeOffer("Red Bull Rookies",team,team===oldTeam)));
    }else{
-     state.contractMessage=`Development score ${dev}: your rookie programme has earned ${target} interest.`;
+     state.contractMessage=`Your rookie performances and progress have earned ${target} interest.`;
      const nextTeams=shuffled(teamNames(target));
 
      // In years two and three, a 55+ OVR rider can choose to stay in Rookies rather than being forced upward.
@@ -609,6 +625,24 @@ function generateOffers(pos,title){
    if(team){
      state.offers.push(makeOffer("MotoGP",team,false));
      state.contractMessage="Years of consistent Moto2 top-five finishes have finally attracted satellite MotoGP interest.";
+   }
+ }
+
+ // Moto3 escape route after four seasons of showing promise.
+ if(oldSeries==="Moto3" && !title){
+   if(promotions.includes("WorldSSP") && state.offers.length<3){
+     const team=shuffled(teamNames("WorldSSP")).find(t=>!state.offers.some(o=>o.series==="WorldSSP"&&o.team===t));
+     if(team){
+       state.offers.push(makeOffer("WorldSSP",team,false));
+       state.contractMessage="After several Moto3 seasons, the superbike paddock sees enough promise to offer you a new route.";
+     }
+   }
+   if(promotions.includes("BSB") && state.offers.length<3){
+     const team=shuffled(teamNames("BSB")).find(t=>!state.offers.some(o=>o.series==="BSB"&&o.team===t));
+     if(team){
+       state.offers.push(makeOffer("BSB",team,false));
+       state.contractMessage="Four years in Moto3 without the Moto2 breakthrough — BSB sees you as a potential project.";
+     }
    }
  }
 
